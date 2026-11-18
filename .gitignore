@@ -1,0 +1,43 @@
+# ---- Never publish ---------------------------------------------------------
+# Secret salt for the anonymous surgeon keys
+data/recipient_salt.txt
+# Environment files and keys (the Supabase service-role key must never leave your PC)
+.env
+.env.*
+*.pem
+*.key
+.streamlit/secrets.toml
+
+# ---- Built locally, too large for git (rebuild with orthoparity.py) ---------
+# Databases
+data/
+*.db
+*.db-journal
+*.duckdb
+*.duckdb.wal
+# Downloaded FDA Summary PDFs, detail pages and OCR text (several GB)
+cache/
+# Everything the pipeline writes. Site CSVs go to a GitHub release, not the repo.
+outputs/
+logs/
+
+# FDA, CMS and GUDID input files (download them yourself; see docs/REBUILD.md)
+FDA*510K*Clearances*.txt
+FDA*Product*Code*.txt
+OP_DTL_*.csv
+OP_REMOVED_*.csv
+FULLDownload_Part*.xml
+
+# ---- Python and editors ------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+~$*.xlsx
+*.tmp.xlsx
+_to_delete/

@@ -1,0 +1,420 @@
+{
+"batch": 2,
+"parser_version": "1.3.1",
+"reviewer": "Claude",
+"decisions": [
+[
+"K112493",
+"K908485",
+"corrected",
+"K980485",
+"Text 'ISOLA (ACROMED) = K908485'. K980485 is AcroMed ISOLA SPINAL SYSTEM."
+],
+[
+"K992525",
+"K961260",
+"confirmed",
+null,
+"Text 'Atlas Modular Shoulder (K961260)'; FDA record is Biomet Kirschner shoulders, a shoulder system from the same lineage. Taken as printed (rule 2)."
+],
+[
+"K110865",
+"K071147",
+"confirmed",
+null,
+"Text 'Tornier Ascend Monolithic Humeral Heads (K071147)'; FDA record is Nexa Orthopedics total shoulder. Tornier acquired Nexa, the Ascend developer."
+],
+[
+"K032295",
+"K351987",
+"corrected",
+"K951987",
+"Text 'Genesis II Total Knee System cleared via K35 I987'. K951987 is Smith & Nephew GENESIS II TOTAL KNEE SYSTEM."
+],
+[
+"K131669",
+"K690353",
+"corrected",
+"K090353",
+"Text 'PERIMETER Interbody Fusion Device (K690353, SE Sep 29. 2009)'. K090353 is Medtronic PERIMETER INTERBODY FUSION DEVICE, decided 2009-09-29."
+],
+[
+"K991708",
+"K441408",
+"own number",
+null,
+"Fax header 'K44 1408' directly above the Summary of Safety and Effectiveness title is the document's own number K991708 garbled."
+],
+[
+"K963256",
+"K811452",
+"confirmed",
+null,
+"Text 'BRW Stereotactic System (Radionics, K811452)'; FDA record is Brown-Roberts-Wells stereotaxic system (BRW)."
+],
+[
+"K013534",
+"K922332",
+"corrected",
+"K922322",
+"Text 'Alphatec ... 3.5mm (K922332) ... Cortical Lag Screw, Alphatec Mfg'. K922322 is Alphatec 3.5MM cannulated cortical lag screw."
+],
+[
+"K993402",
+"K774402",
+"own number",
+null,
+"'510(k) Number (if known): K77 4402' on the Indications for Use form is the document's own number K993402 garbled."
+],
+[
+"K173535",
+"K148529",
+"unresolved",
+null,
+"Cited as Endoskeleton implants (secondary predicate); the number is in no FDA record and no one-digit variant is an Endoskeleton device."
+],
+[
+"K081023",
+"K991561",
+"corrected",
+"K991581",
+"Text 'K991 561, NexGen Complete Knee Solution Legacy Posterior Stabilized (LPS), LPS-Flex'. K991581 is Zimmer NEXGEN COMPLETE KNEE SOLUTION LEGACY."
+],
+[
+"K073331",
+"K407333",
+"own number",
+null,
+"Header 'K4o 7333' above the company name and 510(k) Summary title is the document's own number K073331 garbled."
+],
+[
+"K021310",
+"K900836",
+"confirmed",
+null,
+"Text 'C-Taper femoral head components were cleared in 510(k) number K900836'; FDA record is Osteonics hip stem series, the same company's hip system."
+],
+[
+"K132029",
+"K121819",
+"corrected",
+"K120819",
+"Text 'Centinel Spine Stalif C System (K 1218 19)'. K120819 is Centinel Spine STALIF C (2012)."
+],
+[
+"K003229",
+"K895920",
+"confirmed",
+null,
+"Text 'existing BIOPATCH Antimicrobial Dressing (K895920)'; FDA record is Vitaphore VITAPATCH, the original Biopatch maker."
+],
+[
+"K101499",
+"K014110",
+"own number",
+null,
+"'510(k) Number (if known): K 01411o' on the Indications for Use form is the document's own number K101499 garbled."
+],
+[
+"K123656",
+"K236561",
+"own number",
+null,
+"Page footer 'K23656 I page 2 of 3' is the document's own number K123656."
+],
+[
+"K103208",
+"K092873",
+"confirmed",
+null,
+"Text 'submitted under K100741, K092873, K051075'; FDA record is DJO Surgical reverse shoulder prosthesis (Encore and DJO are the same company)."
+],
+[
+"K983758",
+"K760777",
+"unresolved",
+null,
+"Cited as Codman occlusion clips; FDA record is an unrelated product and no one-digit variant is a Codman clip."
+],
+[
+"K983758",
+"K782040",
+"unresolved",
+null,
+"Cited as Sugita aneurysm clips by Downs Surgical; the number is in no FDA record."
+],
+[
+"K111510",
+"K963655",
+"confirmed",
+null,
+"Listed with SE date 11/27/1996; FDA record is Sofamor Danek CD HORIZON ANTERIOR SPINAL SYSTEM (Medtronic's predecessor)."
+],
+[
+"K111510",
+"K981676",
+"confirmed",
+null,
+"Listed with SE date 1/28/1999; FDA record is Sofamor Danek CD HORIZON SPINAL SYSTEM."
+],
+[
+"K102277",
+"K110227",
+"own number",
+null,
+"Number in the 510(k) Number field of the Indications for Use sign-off is the document's own number K102277 garbled."
+],
+[
+"K013954",
+"K013987",
+"own number",
+null,
+"Number in the 510(k) Number field of the Indications for Use sign-off is the document's own number K013954 garbled."
+],
+[
+"K971861",
+"K961104",
+"unresolved",
+null,
+"Cited as Ethicon Ultracision hand instruments; FDA record is an unrelated imager and no one-digit variant is an Ethicon device."
+],
+[
+"K133349",
+"K110858",
+"corrected",
+"K100858",
+"Text 'SMR standard or CTA humeral heads (K 110858 ...)'. K100858 is Lima SMR SHOULDER SYSTEM humeral components."
+],
+[
+"K103393",
+"K041449",
+"confirmed",
+null,
+"Text 'Polaris Spinal System cleared in ... K041449'; FDA record is Interpore Cross Synergy plug (Interpore Cross became Biomet Spine)."
+],
+[
+"K955733",
+"K933798",
+"corrected",
+"K933738",
+"Text 'M. Kurosaka Interference Screw (DePuy) - K933798'. K933738 is DePuy M. KUROSAKA INTERFERENCE FIXATION SCREW."
+],
+[
+"K063736",
+"K989447",
+"corrected",
+"K984447",
+"Text 'Invacare Action AT II Manual Wheelchair (K989447)'. K984447 is Invacare MODEL ACTION AT II MANUAL WHEELCHAIR."
+],
+[
+"K992937",
+"K925764",
+"confirmed",
+null,
+"Table row 'Standard Series 4.0 mm ... K925764'; FDA record is Nobelpharma BRANEMARK SYSTEM 4.00 MM FIXTURE."
+],
+[
+"K993073",
+"K982496",
+"corrected",
+"K982497",
+"Text 'Biomet, Inc. Arthrotek Interference Screw (K982496)'. K982497 is Biomet ARTHROTEK INTERFERENCE SCREW."
+],
+[
+"K003182",
+"K933281",
+"confirmed",
+null,
+"Text 'Wright Medical Segmented Orthopaedic System (SOS) (K93328 1)'; FDA record is Wright S.O.S. PROXIMAL FEMUR."
+],
+[
+"K024111",
+"K012965",
+"unresolved",
+null,
+"Cited as an Astra Tech fixture clearance; the number is in no FDA record and no one-digit variant is an Astra Tech device."
+],
+[
+"K032413",
+"K011079",
+"corrected",
+"K011076",
+"Text 'Lorenz Sternal Closure System with Modular Screws (K011079)'. K011076 is Walter Lorenz LORENZ STERNAL CLOSURE SYSTEM WITH MODULAR screws."
+],
+[
+"K140478",
+"K131353",
+"confirmed",
+null,
+"Listed in the comparison table of reverse shoulders; FDA record is Biomet Comprehensive Reverse Shoulder."
+],
+[
+"K013563",
+"K871539",
+"confirmed",
+null,
+"Text 'ACE AIM Femoral Nail K871539'; FDA record is an intramedullary rod (Zindrick IM rod). Taken as printed (rule 2)."
+],
+[
+"K012448",
+"K963831",
+"corrected",
+"K983831",
+"Text 'VectorVision2 (K963831)'. K983831 is BrainLAB VECTORVISION2."
+],
+[
+"K974054",
+"K891445",
+"corrected",
+"K891454",
+"Text 'Exeter II Distal Centralizer (K 891445)'. K891454 is Howmedica EXETER II TOTAL HIP SYSTEM; transposed digits."
+],
+[
+"K993239",
+"K173234",
+"own number",
+null,
+"'510(k) Number: K 173234 Device Name: Stryker Navigation System' on the Indications for Use form is the document's own number K993239 garbled."
+],
+[
+"K013676",
+"K943054",
+"confirmed",
+null,
+"Text 'AD CP titanium coating was found substantially equivalent in 510(k) #K943054'; FDA record is Osteonics SECURE-FIT AD acetabular."
+],
+[
+"K013676",
+"K942900",
+"confirmed",
+null,
+"Text 'AD-HA combination was found substantially equivalent via 510(k) #K942900'; FDA record is Osteonics SECURE-FIT AD-HA acetabular."
+],
+[
+"K062857",
+"K040564",
+"corrected",
+"K040864",
+"Text 'CranioFix Titanium Clamp System (K(040564)'. K040864 is Aesculap CRANIOFIX AND CRANIOFIX2 TITANIUM CLAMP."
+],
+[
+"K022009",
+"K014265",
+"corrected",
+"K014235",
+"Text 'OSSEOTITE NT Implant System KO14265 for clearance of the system on May 16, 2002'. K014235 is Implant Innovations OSSEOTITE NT, decided 2002-05-16."
+],
+[
+"K972919",
+"K952871",
+"corrected",
+"K952471",
+"Text 'Bionx Implants BIOFIX SR-PLLA Threaded Rod (K952871)'. K952471 is BIOFIX bioabsorbable self-reinforced device (Bioscience, Bionx's predecessor)."
+],
+[
+"K141056",
+"K042067",
+"corrected",
+"K040267",
+"Listed among Triathlon Knee System clearances; the number is in no FDA record. K040267 is Howmedica Osteonics TRIATHLON CRUCIATE RETAINING knee (adjacent digits swapped)."
+],
+[
+"K171848",
+"K171484",
+"not a predicate",
+null,
+"Number is in the 510(k) Number field of an Indications for Use form for a different device (CALIBER Spacers) bundled in the PDF; not a cited predicate."
+],
+[
+"K971706",
+"K911969",
+"unresolved",
+null,
+"Cited as Guide Pin; the number is in no FDA record and no one-digit variant is a Nobel accessory."
+],
+[
+"K971706",
+"K953775",
+"confirmed",
+null,
+"Text 'Machine Counter Torque Device (K953775)'; FDA record is Nobelpharma accessories to ceramic abutment."
+],
+[
+"K971706",
+"K962403",
+"confirmed",
+null,
+"Text 'Miruscone Temporary Cylinder (K962403)'; FDA record is Nobelpharma wide accessories."
+],
+[
+"K971706",
+"K926766",
+"unresolved",
+null,
+"Cited as Temporary Tube; the number is in no FDA record."
+],
+[
+"K971706",
+"K952448",
+"confirmed",
+null,
+"Text 'Titanium Impression Coping (K952448)'; FDA record is Nobelpharma 3.3MM accessories."
+],
+[
+"K971706",
+"K922805",
+"confirmed",
+null,
+"Text 'CeraOne Screwdrivers (K922805)'; FDA record is Nobelpharma torque controller."
+],
+[
+"K971706",
+"K971200",
+"own number",
+null,
+"Header 'K 971200 Pre-market Notification JUL 21 1997' is the document's own number K971706 garbled."
+],
+[
+"K033634",
+"K001526",
+"corrected",
+"K001536",
+"Text 'Epsilon Metasul Acetabular Insert ... Hooded (K001526)'. K001536 is Sulzer INTER-OP METASUL HOODED insert."
+],
+[
+"K071881",
+"K911373",
+"confirmed",
+null,
+"Text 'SCR Unicompartmental Knee Prosthesis (K896856 & K911373)'; FDA record is Osteonics unicompartmental knee."
+],
+[
+"K130932",
+"K111492",
+"corrected",
+"K111942",
+"Text 'TSRH Spinal System (KI 11492)'. K111942 is Medtronic TSRH SPINAL SYSTEMS; K111492 is a Materialise instrument."
+],
+[
+"K963285",
+"K923487",
+"corrected",
+"K913487",
+"Text 'Wolf 2280 Electrohydraulic Lithotripter (K923487)'. K913487 is Richard Wolf RIWOLITH 2280."
+],
+[
+"K993074",
+"K882979",
+"unresolved",
+null,
+"Cited as Orthosorb Absorbable Pin; the number is in no FDA record."
+],
+[
+"K032212",
+"K102046",
+"unresolved",
+null,
+"Cited as a KyphX Inflatable Bone Tamp clearance; the number is in no FDA record (and would postdate this 2003 document)."
+]
+]
+}

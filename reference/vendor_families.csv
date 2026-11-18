@@ -1,0 +1,40 @@
+vendor_id,display_name,current_parent,segment,name_regex,note
+vb_spine,VB Spine,Viscogliosi Brothers,Spine,^vbspine,"Formed from Stryker's U.S. spinal implants business, 2025-04-01"
+k2m,K2M,Stryker,Spine,^k2m,
+wright_tornier,Wright Medical (incl. Tornier),Stryker,Extremities and biologics,^(wrightmedical|tornier|dowcorningwright|biomimetic|orthohelix),"Dow Corning Wright, BioMimetic and OrthoHelix are legacy names (Claude draft, verify)"
+stryker,Stryker,Stryker Corporation (public),Diversified,^(stryker|howmedica|osteonics|makosurgical|smallboneinnovations|memometal),"Howmedica, Osteonics, Mako, Small Bone Innovations and Memometal are legacy names (Claude draft, verify)"
+zb_spine,Highridge Medical (former Zimmer Biomet spine),H.I.G. Capital,Spine,^(zimmerspine|zimmerbiometspine|biometspine|ldr|ebi|electrobiology|highridge|zimvie),"Owner by date: Zimmer Biomet, ZimVie (2022-03-01), H.I.G. Capital as Highridge Medical (2024-04-01). ZimVie's dental products fall outside the product scope."
+paragon_28,Paragon 28,Zimmer Biomet,Foot and ankle,^paragon28,
+zimmer_biomet,Zimmer Biomet,Zimmer Biomet Holdings (public),Diversified,^(zimmer|biomet|sigmedical|sulzerorthopedics|centerpulse|intermedicsorthopedics|kirschnermedical|interpore),"Sulzer Orthopedics, Centerpulse, Intermedics Orthopedics, Kirschner and Interpore are legacy names (Claude draft, verify)"
+jnj_depuy_synthes,DePuy Synthes (Johnson & Johnson),Johnson & Johnson (public),Diversified,^(depuy|synthes|medicaldevicebusinessservices|johnsonjohnson|medosinternational|mitek|acromed|depuyacromed),"J&J plans to separate DePuy Synthes, targeted for mid-2027 (not yet an ownership change)"
+ethicon,Ethicon (Johnson & Johnson),Johnson & Johnson (public),General surgery,^ethicon,Mostly outside orthopedic scope
+medicrea,Medicrea,Medtronic,Spine,^medicrea,
+titan_spine,Titan Spine,Medtronic,Spine,^titanspine,Acquisition date not yet sourced
+medtronic,Medtronic,Medtronic plc (public),Diversified,^(medtronic|sofamordanek|danekmedical|warsaworthopedic|kyphon|mazorrobotics|sofamor),"Sofamor Danek, Warsaw Orthopedic, Kyphon and Mazor Robotics are Medtronic entities or legacy names"
+smith_nephew,Smith+Nephew,Smith & Nephew plc (public),Diversified,^(smithnephew|smithandnephew|richardsmedical|acufex|arthrocare|osiris|bluebelttechnologies|rotationmedical|dyonics),"Richards, Acufex, ArthroCare, Osiris, Blue Belt and Rotation Medical are legacy or acquired names (Claude draft, verify)"
+arthrex,Arthrex,Arthrex (private),Sports medicine and extremities,^arthrex,
+nevro,Nevro,Globus Medical,Neuromodulation,^nevro,Outside orthopedic product scope
+nuvasive,NuVasive,Globus Medical,Spine,^nuvasive,
+globus,Globus Medical,Globus Medical (public),Spine and orthopedics,^globus,
+lima,LimaCorporate,Enovis,Joint reconstruction,^lima(corporate|usa|spa)?$|^limacorporate|^limausa,
+mathys,Mathys,Enovis,Joint reconstruction,^mathys,
+trilliant,Trilliant Surgical,Enovis,Foot and ankle,^trilliant,
+medshape,MedShape,Enovis,Foot and ankle,^medshape,
+novastep,Novastep,Enovis,Foot and ankle,^novastep,
+enovis_djo,Enovis (DJO),Enovis Corporation (public),Diversified,^(enovis|encoremedical|encoreorthopedics|djo|empi),Colfax renamed Enovis on 2022-04-04
+seaspine,SeaSpine,Orthofix,Spine and orthobiologics,^seaspine,
+orthofix,Orthofix,Orthofix Medical (public),Spine and orthopedics,^(orthofix|blackstonemedical),Blackstone Medical is a legacy name (Claude draft)
+alphatec,Alphatec Spine,Alphatec Holdings (public),Spine,^(alphatec|eosimaging),
+in2bones,In2Bones,CONMED,Extremities,^in2bones,
+conmed,CONMED (incl. Linvatec),CONMED Corporation (public),Sports medicine,^(conmed|linvatec),
+exactech,Exactech (now Advita),Advita (SVP / Stellex / Greywolf),Joint reconstruction,^(exactech|advita),
+conformis,Conformis,restor3d,Joint reconstruction,^conformis,
+restor3d,restor3d,restor3d (private),Orthopedics,^restor3d,
+surgalign,Surgalign (formerly RTI Surgical),Xtant Medical (hardware and biologics),Spine and orthobiologics,^(rtisurgical|surgalign),
+xtant,Xtant Medical,Xtant Medical Holdings (public),Spine and orthobiologics,^(xtant|bacterin|xspinesystems),X-spine and Bacterin are legacy names (Claude draft)
+anika,Anika Therapeutics,Anika Therapeutics (public),Orthobiologics and sports medicine,^(anika|arthrosurface|parcusmedical),Arthrosurface and Parcus dates not yet sourced
+bioventus,Bioventus,Bioventus (public),Orthobiologics,^(bioventus|misonix|bioness),
+aesculap,Aesculap (B. Braun),B. Braun,Diversified,^aesculap,
+corin,Corin (incl. OMNIlife),Corin Group,Joint reconstruction,^(corin|omnilife),OMNIlife link not yet sourced
+mtf,MTF Biologics,MTF (non-profit),Orthobiologics,^musculoskeletaltransplant,
+integra,Integra LifeSciences,Integra LifeSciences (public),Regenerative and neuro,^integra,Extremity orthopaedics business sold to Smith+Nephew 2021-01-04
