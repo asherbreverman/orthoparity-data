@@ -72,6 +72,17 @@ def write(path, header, rows) -> int:
     return n
 
 
+
+SITE_NAME_RULE = ("Applicant names appear as printed at clearance. For \"Is it new?\", two applicants count as the "
+                  "same company when they belong to vendors with the same owner on the clearance date; peers and "
+                  "category counts compare names as printed.")
+
+
+def _site_limitation(text: str) -> str:
+    """The website rolls company names up for the novelty pattern (supabase/02_device_functions.sql); the local
+    lookup workbook does not, so only the site's copy of this one limitation changes."""
+    return SITE_NAME_RULE if text.startswith("Applicant names appear as printed") else text
+
 def main() -> int:
     cfg = load_config()
     con = connect(cfg.db_path)
@@ -146,7 +157,7 @@ def main() -> int:
             ("exported_utc", dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M")),
             ("starting_set_clearances", str(len(starting)))] + \
            [(f"rows_{k}", str(v)) for k, v in counts.items()] + \
-           [(f"limitation_{i:02d}", t) for i, t in enumerate(LIMITATIONS, 1)]
+           [(f"limitation_{i:02d}", t) for i, t in enumerate(map(_site_limitation, LIMITATIONS), 1)]
     write(out / "pc_meta.csv", ["key", "value"], meta)
     for f in sorted(out.glob("*.csv")):
         print(f"  {f.name:16} {f.stat().st_size / 1e6:6.1f} MB")

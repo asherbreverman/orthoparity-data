@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1: company matching and ownership wording (2026-11-18)
+
+- "Is it new?" now treats two predicates as the same company when both applicants belong to vendors with the same
+  owner on the clearance date, not only when the printed names match. Example: ATTUNE (K140881, "Depuy(Ireland)")
+  citing "DePuy Orthopaedics, Inc." predicates was labeled a competitive entry; it is a line extension. Across the
+  11,995 starting-set devices with predicates on file, about 1,490 (12%) changed label, nearly all toward line
+  extension (1,060 now read as line extensions).
+  New functions: `pc_applicant_vendor`, `pc_owner_at`, `pc_same_company`; `pc_direct` and `pc_compare` use them.
+- Vendor ownership card: a vendor with acquisitions older than five years now reads "No recent changes" and lists
+  them, where it read "No changes on record" beside "2 acquisitions on record". A vendor bought by a company outside
+  the vendor list (for example ZB Spine, now owned by H.I.G. Capital) now shows that owner.
+- New index on `pc_vendor_names (raw_name, source)`.
+
 ## 0.4.0: clean public repository (2026-11-18)
 
 The project moved from a working folder to a clean, documented repository for open-source release. The code that

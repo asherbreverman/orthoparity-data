@@ -120,6 +120,7 @@ create table if not exists pc_op_ownership (
   vendor_pit text, vendor_current text, year integer, holders integer, invested double precision, value double precision);
 create index if not exists pc_vendor_names_v on pc_vendor_names (vendor_id);
 create index if not exists pc_vendor_names_trgm on pc_vendor_names using gin (raw_name gin_trgm_ops);
+create index if not exists pc_vendor_names_raw on pc_vendor_names (raw_name, source);
 create index if not exists pc_vendors_trgm on pc_vendors using gin (display_name gin_trgm_ops);
 create index if not exists pc_portfolio_brands_v on pc_portfolio_brands (vendor_id);
 create index if not exists pc_portfolio_510k_v on pc_portfolio_510k (vendor_id);

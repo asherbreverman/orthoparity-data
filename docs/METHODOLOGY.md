@@ -221,7 +221,7 @@ data always gives the same cards. "Last five years" is measured back from the la
 
 | Card | Rule |
 |---|---|
-| Is it new? | Line extension when every direct predicate is the same company's; competitive entry when none are; mixed otherwise; "predicate not on file" when no numbered predicate was read |
+| Is it new? | Line extension when every direct predicate is the same company's; competitive entry when none are; mixed otherwise; "predicate not on file" when no numbered predicate was read. Same company: the cleaned applicant names match, or both applicants belong to vendors with the same owner on the clearance date (the dated roll-up used for payments) |
 | What else does this job? | Other companies with clearances in the same product code in the last five years, grouped by current owner |
 | Financial ties | Open Payments naming this 510(k) or its brand |
 | Evidence | Industry-funded research in Open Payments that names this 510(k) |
@@ -234,7 +234,7 @@ data always gives the same cards. "Last five years" is measured back from the la
 |---|---|
 | Where do they compete? | Product codes in the portfolio, active codes in the last five years, and categories where the vendor is a top-3 filer. Broad at 12 or more codes, focused at 3 or fewer |
 | Are they still investing? | Clearances in the last five years against the five before: more (20% or more up), fewer (20% or more down), steady, new entrant, or none recent |
-| Ownership | Dated acquisitions by the vendor in the last five years, and who owns it now |
+| Ownership | Acquisitions by the vendor in the last five years (older ones listed as earlier), and the vendor's current owner if another company bought it |
 | Payments | Latest year's total and recipients, consulting recipients, royalty share, physician owners |
 | Evidence | Research studies funded, in orthopedic scope |
 | Supply | GUDID brands, and brands with no device ID still in commercial distribution |

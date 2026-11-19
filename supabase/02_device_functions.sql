@@ -164,6 +164,44 @@ end
 $$;
 
 -- Direct predicates of one clearance with identity and same-company / same-code markers.
+-- Same company? Applicant names as printed at clearance can differ for one company ("DePuy Orthopaedics, Inc."
+-- and "Depuy(Ireland)"), and companies change hands. Two clearances count as the same company when their cleaned
+-- names match, or when both applicants belong to vendors with the same owner on the given date. The owner follows
+-- the same dated roll-up rules as the payment totals (acquired by, merged into, owned by, asset purchases).
+create or replace function pc_applicant_vendor(name text)
+returns text
+language sql stable
+as $$
+  select min(vendor_id) from pc_vendor_names where source = 'applicant' and raw_name = name
+$$;
+
+create or replace function pc_owner_at(v text, d date)
+returns text
+language sql stable
+as $$
+  with recursive up(vid, depth) as (
+    select v, 0 where v is not null
+    union all
+    select l.parent, up.depth + 1
+      from up join pc_vendor_lineage l on l.vendor_id = up.vid
+     where up.depth < 3
+       and l.parent <> up.vid
+       and l.relation in ('acquired by', 'merged into', 'owned by', 'hardware and biologics assets acquired by')
+       and exists (select 1 from pc_vendors p where p.vendor_id = l.parent)
+       and coalesce(l.valid_from, date '1900-01-01') <= coalesce(d, current_date)
+       and coalesce(l.valid_to, date '2999-12-31') >= coalesce(d, current_date)
+  )
+  select vid from up order by depth desc limit 1
+$$;
+
+create or replace function pc_same_company(a_applicant text, a_root text, b_applicant text, b_root text, d date)
+returns boolean
+language sql stable
+as $$
+  select (a_root is not null and a_root = b_root)
+      or coalesce(pc_owner_at(pc_applicant_vendor(a_applicant), d) = pc_owner_at(pc_applicant_vendor(b_applicant), d), false)
+$$;
+
 create or replace function pc_direct(k text)
 returns table (predicate text, role text, confidence text, review_source text, number_as_printed text,
                device_name text, applicant text, decision_year text, product_code text, kind text,
@@ -174,7 +212,7 @@ as $$
   select e.predicate, e.role, e.confidence, e.review_source, e.number_as_printed,
          d.device_name, d.applicant, d.decision_year, d.product_code,
          case when e.predicate like 'P%' then 'PMA' when e.predicate like 'DEN%' then 'De Novo' else '510(k)' end,
-         (d.company_root is not null and d.company_root = me.company_root),
+         pc_same_company(d.applicant, d.company_root, me.applicant, me.company_root, nullif(me.decision_date, '')::date),
          (d.product_code is not null and d.product_code = me.product_code),
          min(e.list_order)
     from pc_edges e
@@ -182,7 +220,8 @@ as $$
     left join pc_devices d on d.knumber = e.predicate
    where e.child = me.knumber
    group by e.predicate, e.role, e.confidence, e.review_source, e.number_as_printed, d.device_name, d.applicant,
-            d.decision_year, d.product_code, d.company_root, me.company_root, me.product_code
+            d.decision_year, d.product_code, d.company_root, me.company_root, me.product_code, me.applicant,
+            me.decision_date
    order by (e.role = 'primary') desc, min(e.list_order)
 $$;
 
@@ -485,7 +524,8 @@ begin
   return jsonb_build_object(
     'a', to_jsonb(da), 'b', to_jsonb(db),
     'same_product_code', da.product_code is not null and da.product_code = db.product_code,
-    'same_company', da.company_root is not null and da.company_root = db.company_root,
+    'same_company', pc_same_company(da.applicant, da.company_root, db.applicant, db.company_root,
+                                    greatest(nullif(da.decision_date, '')::date, nullif(db.decision_date, '')::date)),
     'verdict', verdict,
     'direct_shared', direct_shared,
     'shared_ancestors', shared,

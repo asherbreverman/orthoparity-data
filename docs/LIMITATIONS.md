@@ -20,8 +20,10 @@ the data can't support is part of the method.
   device.
 - **The starting set covers orthopedic product codes only.** Non-orthopedic ancestors come in through the
   ancestor walk, and their own predicates are read the same way.
-- **Applicant names appear as printed at clearance.** The predicate pages don't roll them up to current owners;
-  the vendor pages do.
+- **Applicant names appear as printed at clearance.** For "Is it new?", two applicants count as the same company
+  when their cleaned names match, or when both belong to vendors with the same owner on the clearance date. An
+  applicant name that isn't in the vendor registry (common for older, non-orthopedic ancestors) is matched by name
+  only, so some line extensions can still read as competitive entries.
 
 ## Vendors and ownership
 

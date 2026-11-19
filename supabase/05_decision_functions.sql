@@ -347,9 +347,13 @@ begin
     into acq, n_acq, acq_names
     from pc_vendor_lineage l join pc_vendors c on c.vendor_id = l.vendor_id
     where l.parent = v and l.vendor_id <> v;
-  select p.display_name, l.valid_from into acquired_by, acquired_on
-    from pc_vendor_lineage l join pc_vendors p on p.vendor_id = l.parent
-    where l.vendor_id = v and l.parent <> v and l.relation ~* '(acquired|merged|owned)'
+  -- current owner, if another company: the latest open-ended ownership change (buyers need not be vendors;
+  -- product-line sales and planned separations don't count)
+  select coalesce(p.display_name, l.parent), l.valid_from into acquired_by, acquired_on
+    from pc_vendor_lineage l left join pc_vendors p on p.vendor_id = l.parent
+    where l.vendor_id = v and l.parent <> v and l.valid_to is null
+      and l.relation ~* '(acquired by|merged into|owned by|sold to|spun off)'
+      and l.relation !~* '(business sold|planned)' and coalesce(l.note, '') !~* 'history note'
     order by l.valid_from desc nulls last limit 1;
 
   -- payments
@@ -397,10 +401,14 @@ begin
       'What is launching in the next 12 months, and what is being retired?',
       'portfolio'),
     pc_card('ownership', 'Has ownership changed?',
-      case when acquired_by is not null then 'Acquired' when n_acq > 0 then 'Recent acquisitions' else 'No changes on record' end,
+      case when acquired_by is not null then 'Acquired' when n_acq > 0 then 'Recent acquisitions'
+           when jsonb_array_length(acq) > 0 then 'No recent changes' else 'No changes on record' end,
       case when acquired_by is not null or n_acq > 0 then 'attention' else 'info' end,
       case when acquired_by is not null then 'Acquired by ' || acquired_by || coalesce(' on ' || to_char(acquired_on, 'Mon DD, YYYY'), '') || '.'
            when n_acq > 0 then 'Acquired ' || acq_names || '.'
+           when jsonb_array_length(acq) > 0 then 'No acquisitions or ownership changes in the last five years. Earlier on record: '
+                || (select string_agg((x->>'name') || coalesce(' (' || to_char((x->>'date')::date, 'Mon YYYY') || ')', ''), ', ')
+                      from jsonb_array_elements(acq) x) || '.'
            else 'No acquisitions or ownership changes in OrthoParity''s reviewed registry.' end,
       case when acquired_by is not null or n_acq > 0 then 'Acquisitions consolidate product lines. Contract pricing, instrument sets and rep coverage can change.'
            else 'The registry covers major orthopedic deals since 2018, so smaller transactions may be missing.' end,
@@ -439,7 +447,9 @@ begin
   cards := jsonb_set(cards, '{0,headline}', to_jsonb(coalesce(n_codes, 0) || ' product code' || case when n_codes = 1 then '.' else 's.' end));
   cards := jsonb_set(cards, '{1,headline}', to_jsonb(coalesce(v_last5, 0) || ' clearance' || case when v_last5 = 1 then '' else 's' end || ' in five years.'));
   cards := jsonb_set(cards, '{2,headline}', to_jsonb(case when acquired_by is not null then 'Now part of ' || acquired_by || '.'
-                                                        when n_acq > 0 then 'Recent acquisitions.' else 'No ownership changes on record.' end));
+                                                        when n_acq > 0 then 'Recent acquisitions.'
+                                                        when jsonb_array_length(acq) > 0 then 'No recent ownership changes.'
+                                                        else 'No ownership changes on record.' end));
   cards := jsonb_set(cards, '{3,headline}', to_jsonb(case when coalesce(tot, 0) > 0 then pc_money(tot) || ' in ' || latest || '.'
                                                         else 'No payments in scope.' end));
   cards := jsonb_set(cards, '{4,headline}', to_jsonb(case when coalesce(n_st, 0) > 0 then n_st || case when n_st = 1 then ' study' else ' studies' end || ' since 2019.'
@@ -452,7 +462,8 @@ begin
   cards := jsonb_set(cards, '{1}', (cards->1) || jsonb_build_object('short', 'Still investing', 'figs', pc_figs(
              pc_fig(pc_num(v_last5), 'clearances, last five years'), pc_fig(pc_num(v_prior5), 'the five years before'))));
   cards := jsonb_set(cards, '{2}', (cards->2) || jsonb_build_object('short', 'Ownership', 'figs', pc_figs(
-             pc_fig(pc_num(jsonb_array_length(acq)), 'acquisitions on record'),
+             pc_fig(pc_num(n_acq), 'acquisitions, last five years'),
+             pc_fig(pc_num(jsonb_array_length(acq)), 'acquisitions on record, all years'),
              case when acquired_by is not null then pc_fig(to_char(acquired_on, 'YYYY'), 'acquired by ' || acquired_by) end)));
   cards := jsonb_set(cards, '{3}', (cards->3) || jsonb_build_object('short', 'Financial relationships', 'figs', case when coalesce(tot, 0) > 0 then pc_figs(
              pc_fig(pc_money(tot), 'reported payments in ' || latest), pc_fig(pc_num(recips), 'recipients in ' || latest),
