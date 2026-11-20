@@ -101,7 +101,7 @@ and never leaves this database.
 
 ## Website tables (`outputs/site_data/*.csv`, Supabase)
 
-The build writes one CSV per table, and `supabase/01_tables.sql` creates the tables. `mode` is `pit` (as owned at the time) or `current` (current owner with history). A 510(k) list inside one cell is separated by `|`.
+The build writes one CSV per table, and `supabase/01_tables.sql` creates the tables. Columns ending in `_pit` use the owner at the time; `_current` columns use today's owner, which is what the site shows. A 510(k) list inside one cell is separated by `|`.
 
 ### pc_devices
 One row per device: the orthopedic starting set plus every ancestor. Identity from FDA records by number.
@@ -138,6 +138,8 @@ One row per listed vendor: name, current parent, segment, clearance counts, GUDI
 
 Columns: `vendor_id`, `display_name`, `current_parent`, `segment`, `basis`, `reviewed`, `note`, `clearances`, `first_clearance_year`, `last_clearance_year`, `gudid_ortho_devices`, `gudid_brands`, `payment_kind`, `rolls_up_to`
 
+`rolls_up_to` is the parent company the site benchmarks (the vendor itself when no other company owns it). `clearances` counts the vendor's own clearances after product-line sales.
+
 ### pc_vendor_names
 Every raw name (payer, applicant, labeler) and the vendor it belongs to, with the basis.
 
@@ -147,6 +149,11 @@ Columns: `vendor_id`, `source`, `raw_name`, `basis`
 Dated ownership changes, each with a source link.
 
 Columns: `vendor_id`, `parent`, `relation`, `valid_from`, `valid_to`, `source_url`, `note`, `reviewed`
+
+### pc_vendor_divestitures
+Product-line sales: the clearances in the listed FDA product codes move from seller to buyer.
+
+Columns: `seller`, `buyer`, `effective`, `product_codes`, `decided_before`, `source_url`, `note`
 
 ### pc_portfolio_brands
 GUDID brands per vendor with their product codes, 510(k)s and device counts.
@@ -202,3 +209,42 @@ Columns: `vendor_pit`, `vendor_current`, `year`, `holders`, `invested`, `value`
 One row per recalled product: recall number, event, dates, FDA class, product code, 510(k)s, vendor link and basis.
 
 Columns: `recall_number`, `event_id`, `initiated`, `posted`, `terminated`, `status`, `recall_class`, `product_code`, `knumbers`, `recalling_firm`, `vendor_id`, `vendor_basis`, `product`, `reason`, `root_cause`, `quantity`
+
+## Medicare procedure tables (`load-medicare-hospitals`)
+
+National figures for data year 2024. Dollar amounts are per case, rounded to whole dollars. No hospital names, IDs
+or charges.
+
+### pc_procedures
+One row per procedure family: volume, the three-way payment split and the supply range.
+
+Columns: `family_id`, `sort_order`, `name`, `description`, `drgs`, `flagship`, `data_year`, `discharges`, `hospitals`, `medicare_pays`, `patient_other_pays`, `total_payment`, `patient_other_share`, `supply_medicare_30`, `supply_medicare_40`, `supply_medicare_50`, `supply_total_30`, `supply_total_40`, `supply_total_50`, `supply_note`
+
+`supply_*` columns are blank, and `supply_note` says why, for families no published study covers.
+
+### pc_procedure_drg
+One row per DRG in a family, with the spread of hospital averages.
+
+Columns: `family_id`, `drg`, `drg_desc`, `discharges`, `hospitals`, `medicare_pays`, `patient_other_pays`, `total_payment`, `share_of_family`, `hospital_medicare_p25`, `hospital_medicare_median`, `hospital_medicare_p75`, `note`, `spread_note`
+
+`note` explains a DRG with no reportable hospital. `spread_note` explains a blank spread (fewer than 5 hospitals).
+
+### pc_procedure_apc
+National totals for each musculoskeletal outpatient payment group.
+
+Columns: `apc`, `apc_desc`, `data_year`, `services`, `patients_reported`, `hospitals`, `medicare_pays`, `patient_other_pays`, `total_allowed`
+
+### pc_procedure_outpatient
+Key procedure codes, their outpatient status and source, joined to the APC totals.
+
+Columns: `family_id`, `cpt`, `procedure`, `outpatient_status`, `apc`, `apc_services`, `apc_medicare_pays`, `apc_patient_other_pays`, `apc_total_allowed`, `source`, `source_url`
+
+### pc_procedure_devices
+Device categories per family, with clearance and active-vendor counts.
+
+Columns: `family_id`, `role`, `product_code`, `plain_name`, `fda_name`, `clearances_all`, `clearances_recent`, `active_vendors`, `status`
+
+### pc_supply_evidence
+Published studies behind the supply range.
+
+Columns: `source`, `procedure`, `data_years`, `measure`, `result`, `source_url`

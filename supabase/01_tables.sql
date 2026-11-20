@@ -142,6 +142,10 @@ create index if not exists pc_op_ownership_p on pc_op_ownership (vendor_pit);
 -- Run it again after re-importing pc_op_research.
 alter table pc_op_research add column if not exists ortho boolean;
 
+-- business lines sold to another company (reference/vendor_divestitures.csv); each row has a public source
+create table if not exists pc_vendor_divestitures (
+  seller text, buyer text, effective date, product_codes text, decided_before date, source_url text, note text);
+
 -- ---------------------------------------------------------------- recalls (openFDA device recalls, 2002 to present)
 create table if not exists pc_recalls (
   recall_number text, event_id text, initiated date, posted date, terminated date, status text, recall_class text,
@@ -152,6 +156,40 @@ create index if not exists pc_recalls_code on pc_recalls (product_code);
 create index if not exists pc_recalls_event on pc_recalls (event_id);
 create index if not exists pc_recalls_k on pc_recalls using gin (string_to_array(knumbers, '|'));
 
+-- ---------------------------------------------------------------- procedures (CMS Medicare Inpatient and Outpatient Hospitals by
+-- Provider and Service, national figures). Payments: medicare_pays = Medicare's share; total = Medicare plus the patient's
+-- deductible and coinsurance plus any third-party payment; patient_other_pays = the difference. No charges, no hospitals.
+create table if not exists pc_procedures (
+  family_id text primary key, sort_order integer, name text, description text, drgs text, flagship text,
+  data_year integer, discharges integer, hospitals integer, medicare_pays integer, patient_other_pays integer,
+  total_payment integer, patient_other_share double precision,
+  supply_medicare_30 integer, supply_medicare_40 integer, supply_medicare_50 integer,
+  supply_total_30 integer, supply_total_40 integer, supply_total_50 integer, supply_note text);
+create table if not exists pc_procedure_drg (
+  family_id text, drg text, drg_desc text, discharges integer, hospitals integer, medicare_pays integer,
+  patient_other_pays integer, total_payment integer, share_of_family double precision,
+  hospital_medicare_p25 integer, hospital_medicare_median integer, hospital_medicare_p75 integer, note text,
+  spread_note text);
+-- added 2026-11-19: why a supply range or a hospital spread is missing (safe to run again)
+alter table pc_procedures add column if not exists supply_note text;
+alter table pc_procedure_drg add column if not exists spread_note text;
+create table if not exists pc_procedure_apc (
+  apc text primary key, apc_desc text, data_year integer, services integer, patients_reported integer, hospitals integer,
+  medicare_pays integer, patient_other_pays integer, total_allowed integer);
+create table if not exists pc_procedure_outpatient (
+  family_id text, cpt text, procedure text, outpatient_status text, apc text, apc_services integer,
+  apc_medicare_pays integer, apc_patient_other_pays integer, apc_total_allowed integer, source text, source_url text);
+create table if not exists pc_procedure_devices (
+  family_id text, role text, product_code text, plain_name text, fda_name text, clearances_all integer,
+  clearances_recent integer, active_vendors integer, status text);
+create table if not exists pc_supply_evidence (
+  source text, procedure text, data_years text, measure text, result text, source_url text);
+create index if not exists pc_procedure_drg_f on pc_procedure_drg (family_id);
+create index if not exists pc_procedure_outpatient_f on pc_procedure_outpatient (family_id);
+create index if not exists pc_procedure_devices_f on pc_procedure_devices (family_id);
+create index if not exists pc_procedure_devices_code on pc_procedure_devices (product_code);
+create index if not exists pc_portfolio_510k_code on pc_portfolio_510k (product_code, decision_date);
+
 -- ---------------------------------------------------------------- public read-only access
 -- Anyone can read these tables and call the public functions; nobody can write through the website.
 grant usage on schema public to anon, authenticated;
@@ -161,7 +199,8 @@ begin
   foreach t in array array['pc_devices','pc_edges','pc_flags','pc_meta','pc_product_codes','pc_ifu',
     'pc_vendors','pc_vendor_names','pc_vendor_lineage','pc_portfolio_brands','pc_portfolio_510k',
     'pc_op_vendor_year','pc_op_vendor_profile','pc_op_entity','pc_op_product','pc_op_product_top','pc_op_research',
-    'pc_op_relationship','pc_op_ownership','pc_recalls']
+    'pc_op_relationship','pc_op_ownership','pc_recalls','pc_vendor_divestitures','pc_procedures','pc_procedure_drg','pc_procedure_apc',
+    'pc_procedure_outpatient','pc_procedure_devices','pc_supply_evidence']
   loop
     execute format('alter table %I enable row level security', t);
     execute format('drop policy if exists "public read" on %I', t);

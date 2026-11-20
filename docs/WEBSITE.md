@@ -27,15 +27,21 @@ Each returns JSON (or rows) and is callable with the public anon key.
 | `pc_compare(a, b)`, `pc_batch(ks)` | Comparisons | Two devices side by side; up to 50 at once |
 | `pc_product_payments(k)` | Product | Open Payments naming this 510(k) or its brand |
 | `pc_device_recalls(k)` | Product | Recalls naming this 510(k) or its direct predicates |
-| `pc_vendor_search(q)` | Search | Vendors matching a name |
+| `pc_vendor_search(q)` | Search | Parent companies matching a name, with the owned company that matched ("via") |
+| `pc_vendor_resolve(v)` | Vendor | The parent company for any vendor, with an explanation and source links |
+| `pc_device_owner(k)` | Product | The FDA filer and the parent company that owns the product today |
+| `pc_vendor_coverage()` | Home | Parent companies and filer companies with 510(k) clearances, first and last year |
 | `pc_vendor_brief(v, mode)` | Vendor | Everything on the vendor page |
 | `pc_vendor_signals(v, mode)` | Vendor | The vendor decision brief |
 | `pc_vendor_portfolio(v, mode, ...)` | Vendor | The vendor's 510(k)s, filterable by anatomy, kind and product code |
 | `pc_vendor_compare(a, b, mode)` | Comparisons | Two vendors side by side |
 | `pc_vendor_recalls(v, mode)` | Vendor | The vendor's recall events |
+| `pc_procedure_list()` | Procedures | Every procedure family with volume and payments |
+| `pc_procedure(fid)` | Procedures | One family: DRGs, outpatient status, device categories with vendors, evidence, worksheet |
+| `pc_vendor_procedures(v, mode)` | Vendor | The procedure families where a vendor has device categories |
+| `pc_device_procedures(k)`, `pc_code_procedures(code)` | Product | The procedure families a device's product code belongs to |
 
-`mode` is `pit` (as owned at the time, the default) or `current` (current owner, with acquired companies'
-history).
+`mode` is kept for older links and always counts by the current parent company.
 
 You can call any of them yourself, for example in the Supabase SQL Editor: `select pc_signals('K241487');`
 

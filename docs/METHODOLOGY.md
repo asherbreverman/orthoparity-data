@@ -163,9 +163,28 @@ and GUDID labelers (by DUNS number, orthopedic product codes only). Names are as
 3. **Otherwise** the cleaned name itself (legal suffixes and words such as Holdings removed) is the vendor.
 
 Answers typed in `reviews/Vendor_Registry_REVIEW.xlsx` (a rename, a parent correction, or moving a name) are
-applied on every run. **Ownership over time** comes from `reference/vendor_lineage.csv`; every event has a date
-and a source link. Two roll-ups sit side by side everywhere: **pit** (as owned at the time: an acquired company's
-history moves to its buyer from the closing date) and **current** (everything moves to the final owner).
+applied on every run.
+
+**Parent companies.** OrthoParity benchmarks the parent company. Every vendor rolls up to its current owner through
+up to three dated links in `reference/vendor_lineage.csv` (acquired by, merged into, owned by, became part of), and
+the site shows the parent with every company it owns, for every year, including years before a purchase. A search
+for a company another company owns lands on the parent, with an explanation and the source links. Two more rules:
+
+- **Private equity.** The roll-up stops at the operating company. The private-equity owner is noted, not used as a
+  parent (for example Highridge Medical, owned by H.I.G. Capital).
+- **Divestitures follow the business.** When a source names the product lines sold, the clearances in those FDA
+  product codes move to the buyer (`reference/vendor_divestitures.csv`); everything else stays with the seller.
+  Example: Stryker's U.S. spinal implants business moved to VB Spine on 2025-04-01 for 17 spine product codes.
+
+**Evidence standard.** Every ownership change needs a public source: an SEC filing, a company release, or
+reputable business and trade press (Citeline, MassDevice, ORTHOWORLD, Becker's and similar). Name variants of one
+company (spelling errors, "dba" names, foreign subsidiaries) are merged when FDA records show the same product
+lines under both names. `reference/ownership_sources.csv` lists every claim checked and its status. A claim backed
+only by a single data-vendor page, or by nothing, is listed as NOT APPLIED and left out.
+
+The build also keeps the dated **as owned at the time** roll-up. The "Is it new?" card uses it to ask whether a
+predicate belonged to the same company on the clearance date, and some payment tables keep both columns
+(`vendor_pit`, `vendor_current`). The site reads the current owner everywhere else.
 
 A vendor is **listed** on the site when it has at least one orthopedic 510(k) in the data.
 
@@ -239,3 +258,54 @@ data always gives the same cards. "Last five years" is measured back from the la
 | Evidence | Research studies funded, in orthopedic scope |
 | Supply | GUDID brands, and brands with no device ID still in commercial distribution |
 | Recalls | Recall events and Class I recalls |
+
+## 18. Medicare payments by procedure (`load-medicare-hospitals`)
+
+The procedure view shows what Original Medicare pays hospitals for orthopedic surgery, next to the device
+categories a case can use. National figures only. No hospital names, no hospital IDs, and no charges.
+
+**Sources.** CMS Medicare Inpatient Hospitals by Provider and Service (one row per hospital and DRG) and Medicare
+Outpatient Hospitals by Provider and Service (one row per hospital and APC), data year 2024. The load checks the
+row and hospital counts in `config.ini` and stops if they differ.
+
+**Procedure families.** `reference/procedure_families.csv` groups 58 surgical DRGs into 15 families. The first 8
+families are the implant-heavy ones (fusion, joint replacement, revision, fracture fixation) and carry 83% of
+Medicare's 2024 payments for musculoskeletal stays (MDC 08 plus spinal DRGs 28 to 30). The other 7 cover the
+remaining surgical DRGs with reported hospitals; all 15 together carry 88%. Medical DRGs (care without surgery, such as medical back problems) are left out because no implant is
+involved. DRG titles come from the CMS MS-DRG v41.1 Definitions Manual (`reference/drg_titles.csv`), in sentence
+case. The load stops if the CMS file's description doesn't match the official title.
+
+**Payment fields.** Each is a per-case average, weighted by discharges across hospitals:
+
+| Field | Inpatient source column | Meaning |
+|---|---|---|
+| Medicare pays | `Avg_Mdcr_Pymt_Amt` | Medicare's own payment |
+| Total payment | `Avg_Tot_Pymt_Amt` | Medicare plus the patient's deductible and coinsurance plus any other payer |
+| Patient and other payers | total minus Medicare | What the hospital bills the patient and secondary payers. Collections can run lower |
+
+Charges (`Avg_Submtd_Cvrd_Chrg`) are never read: they are list prices, not payments.
+
+**Hospital spread.** For each DRG, the 25th percentile, median and 75th percentile of each hospital's own average
+Medicare payment. Shown only when at least 5 hospitals report the DRG (`SPREAD_MIN_HOSPITALS`). Otherwise the
+spread reads NOT FOUND with the hospital count.
+
+**Supply range.** The family payment times 30%, 40% and 50%, a planning reference drawn from published studies of
+implant cost as a share of payment (`reference/supply_cost_evidence.csv`). It is shown only for families a study
+covers (`supply_range = yes`). The other families read NOT FOUND with the reason.
+
+**Device categories.** `reference/procedure_devices.csv` links FDA product codes to each family, with a role
+(implant, biologic, cement and accessories, enabling technology). Links are drafted from the DRG definition and the
+product code's anatomy and stay marked draft until reviewed. For the 7 families added in November 2026, each link
+was checked against public manufacturer coding guides and the CMS MS-DRG v41.1 Definitions Manual. Links with a clear
+source are marked reviewed; links without one were removed. That check confirms a device type's procedures group to
+the family's DRGs. It does not show how often the device is used there. Families whose DRGs mix many unrelated
+operations, or remove implants, get no device categories. For each category the build counts all clearances, clearances in the
+last five years, and active vendors: parent companies with a clearance in those five years.
+
+**Outpatient.** The outpatient file reports payment groups (APCs), not procedures. The view keeps the five
+musculoskeletal APCs (5112 to 5116) and, for a few key procedure codes, its outpatient status from a cited source
+(`reference/procedure_outpatient.csv`). Status not confirmed from an official CMS list reads NOT FOUND.
+
+**Checks.** No row below the 11-case suppression floor, no total payment below Medicare's payment, family
+discharges equal to the sum of their DRGs, every product code known, and no DRG in two families. Results go to
+`outputs/Medicare_Report.txt`.

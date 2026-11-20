@@ -5,18 +5,19 @@ to run again, and none of them writes data except `07_after_import.sql`, which t
 
 | File | What it creates |
 |---|---|
-| `01_tables.sql` | 20 tables, their indexes, and public read-only access (anyone can read, nobody can write) |
+| `01_tables.sql` | 27 tables, their indexes, and public read-only access (anyone can read, nobody can write) |
 | `02_device_functions.sql` | Device search, predicate chains, the device brief, peers, compare and batch |
-| `03_vendor_functions.sql` | Vendor search, portfolio, vendor brief, vendor compare, product payments |
+| `03_vendor_functions.sql` | Vendor search, the parent-company redirect, portfolio, vendor brief, vendor compare, product payments, home page counts |
 | `04_recall_functions.sql` | Recall lookups and the recall cards |
 | `05_decision_functions.sql` | The decision briefs: the signal cards on each product and vendor page |
 | `06_admin.sql` | Two maintenance functions (not callable from the website) and a 15-second query timeout |
 | `07_after_import.sql` | Run after every CSV import: turns blank cells into NULL, marks research rows in orthopedic scope, prints row counts |
+| `08_procedure_functions.sql` | The procedure view (Medicare payments by procedure family) and the procedure links on device pages |
 
 ## Build a new database
 
 1. Create a Supabase project. In the SQL Editor, open a new query, paste `01_tables.sql`, and press Run.
-   Repeat for `02` through `06`, in number order.
+   Repeat for `02` through `06`, then `08`, in number order. (`07` comes after the import in step 3.)
 2. Import the CSV files. Get them from the latest GitHub release (`site_data_YYYY-MM-DD.zip`) or build them
    yourself with `python orthoparity.py all`. Each file goes into the table with the same name
    (`pc_devices.csv` into `pc_devices`, and so on).
@@ -27,6 +28,12 @@ to run again, and none of them writes data except `07_after_import.sql`, which t
 
 ## Update an existing database
 
+- Parent companies and 15 procedure families (2026-11-19): run `01_tables.sql` (it adds the
+  `pc_vendor_divestitures` table and two note columns; existing data stays), then `02`, `03`, `05` and `08`.
+  Empty and re-import the changed tables (list in `CHANGELOG.md`), then run `07_after_import.sql`.
+- Added the procedure view (2026-11-19): run `01_tables.sql` (it only adds the six new `pc_procedure*` and
+  `pc_supply_evidence` tables; existing tables and data stay as they are), then `08_procedure_functions.sql`. Import
+  the six new CSVs and run `07_after_import.sql`.
 - New data, same structure: re-import the CSVs, then run `07_after_import.sql`.
 - Changed functions: run the file that holds them. Each uses `create or replace`, so nothing is lost.
 
@@ -37,7 +44,7 @@ Never put the **service-role** key in code, in the website, or in git. `python o
 
 ## History
 
-These seven files replace eight files written as the site grew (`supabase_setup.sql`, then v2, v3, v4, v6, v9,
+The first seven files replace eight files written as the site grew (`supabase_setup.sql`, then v2, v3, v4, v6, v9,
 v10 and v12). On 2026-11-18 both versions were built side by side in Postgres 16. `pg_dump --schema-only` of the
 two databases matched line for line except one code comment that now names the new file. Two older patch files were data fixes and are not needed for a new
 build: `supabase_v9_product_names.sql` (the CSV now carries every plain-English name) and

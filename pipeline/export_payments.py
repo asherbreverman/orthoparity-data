@@ -10,6 +10,7 @@ import csv
 import sqlite3
 import sys
 
+from predicate_chain import divestitures
 from predicate_chain.config import load_config
 from predicate_chain.paycommon import PaySettings, connect_duck, mark_step, step_done
 
@@ -20,7 +21,7 @@ EXPORTS = {
                coalesce(k.kind, 'no payments') AS payment_kind, cp.vendor_current AS rolls_up_to
         FROM vendors v JOIN listed_vendors USING (vendor_id)
         LEFT JOIN vendor_kind k USING (vendor_id)
-        LEFT JOIN (SELECT DISTINCT vendor_entity AS vendor_id, vendor_current FROM pay_fact) cp USING (vendor_id)
+        LEFT JOIN cur_parent cp USING (vendor_id)  -- parent company from sourced ownership history
         ORDER BY v.clearances DESC, v.vendor_id""",
     "pc_vendor_names": """
         SELECT e.vendor_id, e.source, e.raw_name, e.basis FROM vendor_entities e JOIN listed_vendors USING (vendor_id)
@@ -70,10 +71,11 @@ def clearance_rows(con, cfg):
         FROM sd LEFT JOIN b ON b.k = sd.k AND b.rk = 1 GROUP BY sd.k""").fetchall()}
     sq = sqlite3.connect(str(cfg.db_path))
     rows = []
+    rules = divestitures.load()  # a sold business line's clearances belong to the buyer
     for k, app, name, code, date in sq.execute("""SELECT knumber, applicant, devicename, product_code, decision_date
                                                   FROM clearances ORDER BY decision_date"""):
         b, n, dist = gud.get(k, (None, 0, 0))
-        rows.append([app_vendor.get(app), k, name, app, code, date, b, n, dist])
+        rows.append([divestitures.owner(app_vendor.get(app), code, date, rules), k, name, app, code, date, b, n, dist])
     sq.close()
     return ["vendor_id", "knumber", "device_name", "applicant", "product_code", "decision_date", "gudid_brand",
             "gudid_devices", "gudid_in_distribution"], rows
@@ -100,6 +102,10 @@ def main(argv=None) -> int:
         mb = path.stat().st_size / 1e6
         total += mb
         report.append(f"{name + '.csv':<28}{n:>10,}{mb:>9.1f}")
+    # business lines sold to another company, for the product pages' "now part of" note
+    import shutil
+    shutil.copyfile(divestitures.PATH, out / "pc_vendor_divestitures.csv")
+    report.append(f"{'pc_vendor_divestitures.csv':<28}{len(divestitures.load()):>10,}{0.0:>9.1f}")
     cols, rows = clearance_rows(con, cfg)
     path = out / "pc_portfolio_510k.csv"
     with open(path, "w", newline="", encoding="utf-8") as fh:

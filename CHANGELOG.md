@@ -1,5 +1,48 @@
 # Changelog
 
+## Medicare procedure view and parent-company benchmarking (2026-11-19)
+
+**Medicare payments by procedure.** New step `load-medicare-hospitals` and new group `medicare`. It reads the CMS
+Medicare Inpatient and Outpatient Hospitals by Provider and Service files (data year 2024) and writes six tables:
+`pc_procedures`, `pc_procedure_drg`, `pc_procedure_apc`, `pc_procedure_outpatient`, `pc_procedure_devices` and
+`pc_supply_evidence`. New functions in `supabase/08_procedure_functions.sql`.
+
+- 15 procedure families, 58 surgical DRGs. The first 8 (fusion, joint replacement, revision, fracture fixation)
+  carry 83% of Medicare's 2024 musculoskeletal inpatient payments; 7 more cover the other surgical DRGs with
+  reported hospitals, for 88% in all.
+- Payments split three ways: Medicare pays, patient and other payers, total.
+- DRG titles now come from the CMS MS-DRG v41.1 Definitions Manual (`reference/drg_titles.csv`), complete and in
+  sentence case. DRG lists sort by number.
+- A hospital spread needs at least 5 reporting hospitals (`SPREAD_MIN_HOSPITALS`); otherwise it reads NOT FOUND
+  with the count. The supply range appears only for the 8 families a published study covers; the rest read NOT
+  FOUND with the reason.
+- Outpatient status rows not confirmed from an official CMS list now say so in plain words.
+- Device categories for the 7 added families were checked against public manufacturer coding guides and the CMS
+  MS-DRG v41.1 manual. 28 links are marked reviewed and 10 without a clear source were removed (navigation and AR
+  guidance from spine without fusion, the collagen meniscus implant, which Medicare doesn't cover, and 7 more).
+  Antibiotic-eluting bone void filler moved from knee surgery to debridement, biopsy and amputation. Sources are in
+  `reviews/Procedure_Families_Added_REVIEW.xlsx`.
+- Limitations now note the October 2026 DRG renumbering (MS-DRG v44).
+
+**Parent companies.** A vendor now always means the parent company with every company it owns.
+
+- `pc_vendor_resolve` redirects a company another company owns to its parent, with an explanation and sources.
+  `pc_vendor_search` returns parents only, with the owned company that matched; its 510(k) count includes every
+  owned company. `pc_device_owner` gives a product's filer and its parent today. `pc_vendor_coverage` gives the
+  home page counts (1,895 parent companies with clearances).
+- Product-line sales follow the business by FDA product code (`reference/vendor_divestitures.csv`, new table
+  `pc_vendor_divestitures`). Five sales, including Stryker's U.S. spine business to VB Spine (2025-04-01), 4WEB's
+  osteotomy and ankle truss lines to Stryker (2024-09-11), and EBI's spine lines to Highridge with the ZimVie
+  spine sale.
+- Ownership grew from 25 dated events to 83 dated links, each with a source. Every claim checked is in
+  `reference/ownership_sources.csv` with its status; 3 are not applied. Business and trade press now count as
+  sources alongside SEC filings and company releases. 29 same-company name variants were merged.
+- The "as owned at the time" switch is gone from the site. The dated roll-up still drives "Is it new?".
+- Recalls were re-linked to the new vendor list: 141 of 8,096 remain unlinked.
+
+**Tables to re-import:** `pc_vendors`, `pc_vendor_names`, `pc_vendor_lineage`, `pc_vendor_divestitures`,
+`pc_portfolio_510k`, `pc_portfolio_brands`, `pc_recalls`, the eight `pc_op_*` tables, and the six procedure tables.
+
 ## 0.4.1: company matching and ownership wording (2026-11-18)
 
 - "Is it new?" now treats two predicates as the same company when both applicants belong to vendors with the same

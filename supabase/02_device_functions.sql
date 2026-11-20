@@ -186,7 +186,7 @@ as $$
       from up join pc_vendor_lineage l on l.vendor_id = up.vid
      where up.depth < 3
        and l.parent <> up.vid
-       and l.relation in ('acquired by', 'merged into', 'owned by', 'hardware and biologics assets acquired by')
+       and l.relation in ('acquired by', 'merged into', 'owned by', 'hardware and biologics assets acquired by', 'became part of')
        and exists (select 1 from pc_vendors p where p.vendor_id = l.parent)
        and coalesce(l.valid_from, date '1900-01-01') <= coalesce(d, current_date)
        and coalesce(l.valid_to, date '2999-12-31') >= coalesce(d, current_date)

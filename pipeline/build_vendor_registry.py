@@ -27,6 +27,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from predicate_chain import divestitures
 from predicate_chain.config import load_config
 from predicate_chain.paycommon import CO_SUFFIX, PaySettings, connect_duck, mark_step
 
@@ -136,7 +137,8 @@ def build(con, cfg, answers: dict, fams, lineage) -> dict:
     applicants = Counter()
     first_last = {}
     app_k = defaultdict(list)
-    for k, a, y in sq.execute("SELECT knumber, applicant, decision_year FROM clearances"):
+    clear_rows = sq.execute("SELECT knumber, applicant, decision_year, product_code, decision_date FROM clearances").fetchall()
+    for k, a, y, _code, _date in clear_rows:
         applicants[a] += 1
         app_k[a].append(k)
         if y:
@@ -278,6 +280,19 @@ def build(con, cfg, answers: dict, fams, lineage) -> dict:
             mm["first"] = lo if mm["first"] is None else min(mm["first"], lo)
         if hi:
             mm["last"] = hi if mm["last"] is None else max(mm["last"], hi)
+    # divestitures: a sold business line's clearances count for the buyer (reference/vendor_divestitures.csv)
+    rules = divestitures.load()
+    for _k, a, y, code, date in clear_rows:
+        seller = app_vendor.get(a)
+        buyer = divestitures.owner(seller, code, date, rules)
+        if buyer and buyer != seller:
+            m[seller]["clearances"] -= 1
+            mb = m[buyer]
+            mb["clearances"] += 1
+            if y:
+                y = int(y)
+                mb["first"] = y if mb["first"] is None else min(mb["first"], y)
+                mb["last"] = y if mb["last"] is None else max(mb["last"], y)
     for duns, vid in labeler_vendor.items():
         company, devices, brands = labeler_meta[duns]
         m[vid]["devices"] += devices

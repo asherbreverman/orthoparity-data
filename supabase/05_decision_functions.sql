@@ -352,7 +352,7 @@ begin
   select coalesce(p.display_name, l.parent), l.valid_from into acquired_by, acquired_on
     from pc_vendor_lineage l left join pc_vendors p on p.vendor_id = l.parent
     where l.vendor_id = v and l.parent <> v and l.valid_to is null
-      and l.relation ~* '(acquired by|merged into|owned by|sold to|spun off)'
+      and l.relation ~* '(acquired by|merged into|owned by|sold to|spun off|became part of)'
       and l.relation !~* '(business sold|planned)' and coalesce(l.note, '') !~* 'history note'
     order by l.valid_from desc nulls last limit 1;
 

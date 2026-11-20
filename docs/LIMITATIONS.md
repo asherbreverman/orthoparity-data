@@ -30,8 +30,17 @@ the data can't support is part of the method.
 - **The vendor registry groups names by rule and by review.** A curated pattern, device and 510(k) evidence, or
   the cleaned name decides which vendor a name belongs to. Unreviewed groupings can be wrong; the registry
   workbook in `reviews/` shows each one and its basis.
-- **Ownership changes come from 25 dated events with sources.** Deals not in `reference/vendor_lineage.csv` are
-  not reflected. Point-in-time views move a company's history to its buyer from the closing date only.
+- **OrthoParity benchmarks the parent company.** A parent's clearances, payments and recalls include every company
+  it owns today, for all years, including years before the purchase. That answers "what does this company sell
+  now", not "what did it do on its own".
+- **Ownership comes from 83 dated links and 5 product-line sales, each with a source.** Deals not in
+  `reference/` are not reflected. Sources include business and trade press, not only company filings, and
+  `reference/ownership_sources.csv` shows the source for each claim. A few deals have only a year or month in their
+  source, so their date is left blank.
+- **Product-line sales move only the product codes a source names.** Where no source says which clearances went
+  with a sale, they stay with the seller: Vilex in Tennessee clearances stay with OrthoPediatrics, ROSA Spine
+  clearances stay with Zimmer Biomet, and EBI bone void fillers stay with Zimmer Biomet.
+- **Private-equity owners are noted, not used as parents.** The roll-up stops at the operating company.
 - **Listed vendors** are companies with at least one orthopedic 510(k) in the data.
 
 ## Industry payments (CMS Open Payments)
@@ -94,6 +103,31 @@ the data can't support is part of the method.
   choice, but the split by specialty can shift slightly.
 - **New FDA and CMS releases change the numbers.** Each data release on GitHub is dated, and `pc_meta.csv` records
   the export time and parser version.
+
+## Medicare payments by procedure
+
+- **Original Medicare fee-for-service only.** Medicare Advantage, Medicaid and commercial payers are not in the
+  data, and commercial rates usually run higher.
+- **CMS hides any hospital and DRG with fewer than 11 discharges** (11 services for outpatient), so totals and
+  hospital counts run low, most for low-volume DRGs. DRG 461 and 12 other musculoskeletal surgical DRGs (476, 495,
+  498, 499, 503, 505, 506 to 510 and 514) had no reportable hospital in 2024.
+- **A hospital spread needs at least 5 hospitals.** Twelve DRGs fall short, mostly hand, foot, knee and hardware
+  removal surgery, which has moved to outpatient care.
+- **A DRG pays for the whole stay:** room, staff, operating room, drugs and supplies. No public data shows what a
+  hospital pays for devices. The supply range is a planning reference from published studies, not a standard or a
+  target, and it appears only for the 8 families a study covers.
+- **"Patient and other payers" is what the hospital bills,** not what it collects.
+- **Hip and knee replacement share DRGs 469 and 470 and APC 5115,** so the data can't separate them.
+- **Outpatient groups (APCs) cover many procedures each,** so the outpatient view can't separate, say, a bunion
+  repair from a wrist plate.
+- **Device categories are drafted from DRG definitions and FDA anatomy,** and stay marked draft until reviewed. Real
+  cases vary, and many biologics and PMA devices are outside the 510(k) data.
+- **"Reviewed" device categories were checked against public sources,** not by a clinician. For the 7 families added
+  in November 2026, a reviewed link means a manufacturer coding guide or the CMS DRG manual ties that device type's
+  procedures to the family's DRGs. It does not mean the device shows up in a given share of cases.
+- **These are 2024 DRGs** (titles from MS-DRG v41.1). CMS added new spine fusion DRGs in fiscal year 2025, and
+  renumbered more on October 1, 2026 (MS-DRG v44): knee surgery with an infection diagnosis moved from DRGs 485 to 487
+  to DRG 400, and hip or knee revision moved from 466 to 468 to DRG 449. Today's DRG list won't match these numbers.
 
 ## Scope of the project
 

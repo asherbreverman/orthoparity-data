@@ -66,6 +66,17 @@ python orthoparity.py recalls
 
 It reads `pc_portfolio_510k.csv` and `pc_vendor_names.csv` from step 3, so run it after `payments`.
 
+## 4b. Build the Medicare procedure view
+
+Download the two CMS files (`docs/DATA_SOURCES.md`, section 9) into the folders `config.ini` names, then:
+
+```
+python orthoparity.py medicare
+```
+
+It reads `pc_product_codes.csv`, `pc_vendors.csv` and `pc_portfolio_510k.csv`, so run it after `predicates` and
+`payments`. Check `outputs/Medicare_Report.txt`: the last line should read "Problems: none".
+
 ## 5. Check, then load the database
 
 ```

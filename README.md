@@ -16,7 +16,12 @@ generations), which other companies sell devices that do the same job, what indu
 large its catalog is, and whether it or its predicates were recalled.
 
 For a **vendor**: where it competes, whether it is still adding products, who owns it now and since when, what it
-pays surgeons and for what, what research it funds, and its recall history.
+pays surgeons and for what, what research it funds, and its recall history. A vendor always means the parent
+company with every company it owns.
+
+For a **procedure**: what Original Medicare pays hospitals per case for 15 groups of orthopedic surgery (58 DRGs),
+split into Medicare's payment and the patient's and other payers' share, with the device categories a case can use
+and the companies active in each.
 
 Each page ends in a short list of signals, each with a finding, why it matters, and a question to ask the vendor.
 The signals follow fixed rules (see `supabase/05_decision_functions.sql`), so the same data always gives the same
@@ -32,7 +37,8 @@ answer. A payment or a recall is a fact to ask about, never a judgment of a comp
 | FDA GUDID full release | Device IDs, brands, catalog size | 5,258,157 device records, November 2026 release |
 | CMS Open Payments | Industry payments to surgeons and teaching hospitals | Program years 2019 to 2025 |
 | openFDA device recalls | Recalls and FDA recall class | 8,096 recalled products in 2,537 events, 2002 to Nov 14, 2026 |
-| SEC filings and company press releases | Dated ownership changes | 25 dated events, each with a source link |
+| CMS Medicare hospital payments | Inpatient payments by DRG, outpatient by APC | Data year 2024: 2,906 inpatient and 3,126 outpatient hospitals |
+| SEC filings, company releases, business and trade press | Dated ownership changes | 83 dated links and 5 product-line sales, each with a source link |
 
 `docs/DATA_SOURCES.md` says where to download each one.
 
@@ -42,10 +48,11 @@ answer. A payment or a recall is a fact to ask about, never a judgment of a comp
 FDA release files ─┐
 Summary PDFs ──────┼─> predicate database (SQLite) ─┐
 FDA product codes ─┘                                 │
-GUDID ─────────────┐                                 ├─> 20 CSV files ─> Supabase (Postgres) ─> website
+GUDID ─────────────┐                                 ├─> 27 CSV files ─> Supabase (Postgres) ─> website
 Open Payments ─────┼─> payments database (DuckDB) ───┤
 vendor registry ───┘                                 │
-openFDA recalls ─────────────────────────────────────┘
+openFDA recalls ─────────────────────────────────────┤
+CMS Medicare hospital payments ──────────────────────┘
 ```
 
 One command runs any step: `python orthoparity.py <step>`. Run it with no step to see the list.
@@ -55,6 +62,7 @@ One command runs any step: `python orthoparity.py <step>`. Run it with no step t
 | `predicates` | load-fda, extract-predicates, walk-ancestors, import-review, extract-ifu, product-dictionary, export-predicates |
 | `payments` | index-gudid, load-open-payments, build-vendor-registry, match-products, build-payment-aggregates, validate-payments, repair-text, export-payments |
 | `recalls` | fetch-recalls |
+| `medicare` | load-medicare-hospitals |
 | `all` | all of the above |
 
 `docs/REBUILD.md` walks through a full rebuild. The first predicate download reads about 18,000 Summary PDFs
@@ -109,6 +117,9 @@ Read `docs/LIMITATIONS.md` before relying on any number. The short version:
   where the public record stops, not necessarily the original design.
 - Open Payments shows reported payments only, and a payment is not evidence of influence.
 - Recall reporting and recall classes come from FDA as published; older recalls have no class in openFDA.
+- Medicare figures cover Original Medicare only, at national level. No public data shows what a hospital pays for
+  devices, so the supply range is a planning reference, not a price.
+- A parent company's numbers include every company it owns, for all years.
 - Segment labels and plain-English product names were drafted with AI help and are marked when not yet reviewed.
 
 ## Privacy

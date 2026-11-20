@@ -2,8 +2,54 @@
 -- Part of the OrthoParity data pipeline (MIT License). Run the files in this folder in number order in the
 -- Supabase SQL Editor (or psql). Every file is safe to run again. See supabase/README.md.
 
+-- Benchmark a vendor always means the parent company (current owner, with every acquired or merged company's
+-- history). The m argument stays for older callers and is ignored.
 create or replace function pc_mode(m text) returns text language sql immutable as
-$$ select case when lower(coalesce(m, '')) = 'current' then 'current' else 'pit' end $$;
+$$ select 'current'::text $$;
+
+-- parent company of any vendor: its current owner after every sourced acquisition, merger or divestiture
+create or replace function pc_vendor_parent(v text) returns text language sql stable as $$
+  select coalesce(nullif(x.rolls_up_to, ''), x.vendor_id) from pc_vendors x where x.vendor_id = v
+$$;
+
+-- one step up the ownership chain, with the sourced event that links them
+create or replace function pc_vendor_step(v text) returns jsonb language sql stable as $$
+  select jsonb_build_object('vendor_id', l.vendor_id, 'name', c.display_name, 'parent', l.parent, 'parent_name', p.display_name,
+                            'relation', l.relation, 'date', l.valid_from, 'source_url', l.source_url)
+  from pc_vendor_lineage l join pc_vendors c on c.vendor_id = l.vendor_id join pc_vendors p on p.vendor_id = l.parent
+  where l.vendor_id = v and l.valid_to is null
+    and l.relation in ('acquired by', 'merged into', 'owned by', 'hardware and biologics assets acquired by', 'became part of')
+  order by l.valid_from desc nulls last limit 1
+$$;
+
+-- what the site shows when someone opens a company that is part of another: where to go and why
+create or replace function pc_vendor_resolve(v text) returns jsonb language plpgsql stable as $$
+declare top text := pc_vendor_parent(v); cur text := v; st jsonb; steps jsonb := '[]'::jsonb; msg text := ''; i int := 0;
+begin
+  if top is null then
+    return jsonb_build_object('found', false, 'requested', v);
+  end if;
+  while cur <> top and i < 4 loop
+    st := pc_vendor_step(cur);
+    exit when st is null;
+    steps := steps || st;
+    msg := msg || case when i = 0 then '' else ', which ' end
+           || case when i = 0 then (st->>'name') || ' ' else '' end
+           || case st->>'relation' when 'acquired by' then 'was acquired by ' when 'merged into' then 'merged into '
+                   when 'owned by' then 'is owned by ' when 'became part of' then 'became part of '
+                   else 'became part of ' end
+           || (st->>'parent_name') || coalesce(' on ' || (st->>'date'), '');
+    cur := st->>'parent'; i := i + 1;
+  end loop;
+  return jsonb_build_object(
+    'found', true, 'requested', v, 'requested_name', (select display_name from pc_vendors where vendor_id = v),
+    'vendor_id', top, 'name', (select display_name from pc_vendors where vendor_id = top),
+    'redirected', top <> v, 'steps', steps, 'event', case when msg <> '' then rtrim(msg, '.') || '.' end,
+    'explanation', case when top <> v and msg <> '' then rtrim(msg, '.') || '. OrthoParity benchmarks the parent company, so this page covers '
+                                                       || (select display_name from pc_vendors where vendor_id = top) || ' and every company it owns.'
+                        when top <> v then (select display_name from pc_vendors where vendor_id = v) || ' is part of '
+                                           || (select display_name from pc_vendors where vendor_id = top) || '.' end);
+end $$;
 
 -- vendors included under v: itself plus vendors that roll up to it (acquired companies)
 create or replace function pc_vendor_family(v text, m text)
@@ -30,15 +76,43 @@ returns jsonb language sql stable as $$
     where length(t.t) >= 2
       and (lower(v.display_name) like '%' || t.t || '%' or lower(n.raw_name) like '%' || t.t || '%'
            or word_similarity(t.t, lower(n.raw_name)) >= 0.45)
-    group by v.vendor_id)
+    group by v.vendor_id),
+  -- every hit counts for its parent company; keep the best-scoring way in
+  by_parent as (
+    select distinct on (pc_vendor_parent(h.vendor_id)) pc_vendor_parent(h.vendor_id) as parent, h.vendor_id as via, h.score,
+           h.matched_name
+    from hits h order by pc_vendor_parent(h.vendor_id), h.score desc, (h.vendor_id = pc_vendor_parent(h.vendor_id)) desc)
   select coalesce(jsonb_agg(jsonb_build_object(
            'vendor_id', v.vendor_id, 'display_name', v.display_name, 'current_parent', v.current_parent,
-           'segment', v.segment, 'clearances', v.clearances, 'rolls_up_to', v.rolls_up_to,
-           'rolls_up_to_name', (select p.display_name from pc_vendors p where p.vendor_id = v.rolls_up_to and p.vendor_id <> v.vendor_id),
-           'matched_name', h.matched_name,
-           'payments_2025', (select total from pc_op_vendor_profile pr where pr.vendor_id = v.vendor_id and pr.mode = 'pit' and pr.year = 2025))
-         order by h.score desc, v.clearances desc), '[]'::jsonb)
-  from (select * from hits order by score desc limit lim) h join pc_vendors v on v.vendor_id = h.vendor_id
+           'segment', v.segment,
+           'clearances', (select coalesce(sum(x.clearances), 0) from pc_vendors x
+                           where x.vendor_id = v.vendor_id or x.rolls_up_to = v.vendor_id),
+           'matched_name', b.matched_name,
+           'via_vendor_id', case when b.via <> b.parent then b.via end,
+           'via_name', case when b.via <> b.parent then (select x.display_name from pc_vendors x where x.vendor_id = b.via) end,
+           'payments_2025', (select total from pc_op_vendor_profile pr where pr.vendor_id = v.vendor_id and pr.mode = 'current' and pr.year = 2025))
+         order by b.score desc, (select coalesce(sum(x.clearances), 0) from pc_vendors x where x.vendor_id = v.vendor_id or x.rolls_up_to = v.vendor_id) desc), '[]'::jsonb)
+  from (select * from by_parent order by score desc limit lim) b join pc_vendors v on v.vendor_id = b.parent
+$$;
+
+-- product pages: who filed the 510(k) and which parent company owns that product line now
+create or replace function pc_device_owner(k text) returns jsonb language sql stable as $$
+  with d as (select p.knumber, p.applicant, p.vendor_id from pc_portfolio_510k p
+             where p.knumber = upper(regexp_replace(coalesce(k, ''), '[\s\-]', '', 'g')) limit 1),
+  f as (select d.*, pc_applicant_vendor(d.applicant) as filer_vendor, pc_vendor_parent(d.vendor_id) as owner from d)
+  select case when f.knumber is null then jsonb_build_object('found', false) else jsonb_build_object(
+    'found', true, 'knumber', f.knumber, 'filer', f.applicant, 'filer_vendor_id', f.filer_vendor,
+    'owner_vendor_id', f.owner, 'owner_name', (select display_name from pc_vendors where vendor_id = f.owner),
+    'now_part_of', coalesce(f.filer_vendor, f.vendor_id) is distinct from f.owner,
+    'divested', f.vendor_id is distinct from coalesce(f.filer_vendor, f.vendor_id),
+    'explanation', case when f.vendor_id is distinct from coalesce(f.filer_vendor, f.vendor_id)
+                          then (select 'This product line was sold to ' || x.display_name || coalesce(' on ' || dv.effective, '') || '.'
+                                from pc_vendors x left join pc_vendor_divestitures dv on dv.buyer = f.vendor_id and dv.seller = f.filer_vendor
+                                where x.vendor_id = f.vendor_id limit 1)
+                        when coalesce(f.filer_vendor, f.vendor_id) is distinct from f.owner
+                          then (pc_vendor_resolve(coalesce(f.filer_vendor, f.vendor_id))->>'event') end,
+    'source_url', (select dv.source_url from pc_vendor_divestitures dv where dv.buyer = f.vendor_id and dv.seller = f.filer_vendor limit 1))
+  end from (select 1) one left join f on true
 $$;
 
 create or replace function pc_vendor_portfolio(v text, m text default 'pit', p_anatomy text default null,
@@ -322,6 +396,18 @@ begin
     'note', 'A payment counts in full for every product it names, so product totals overlap. Payments with no product named are not included.');
 end $$;
 
+-- home page counts: parent companies with 510(k) clearances (a company another company owns counts under its parent)
+create or replace function pc_vendor_coverage()
+returns jsonb language sql stable as $$
+  select jsonb_build_object(
+    'parent_companies', count(*) filter (where coalesce(rolls_up_to, vendor_id) = vendor_id),
+    'filer_companies', count(*),
+    'first_year', min(first_clearance_year), 'last_year', max(last_clearance_year))
+  from pc_vendors where coalesce(clearances, 0) > 0
+$$;
+
+grant execute on function pc_vendor_parent(text), pc_vendor_step(text), pc_vendor_resolve(text), pc_device_owner(text),
+  pc_vendor_coverage() to anon, authenticated;
 grant execute on function pc_mode(text), pc_vendor_family(text, text), pc_vendor_search(text, int),
   pc_vendor_portfolio(text, text, text, text, text, int), pc_vendor_brief(text, text), pc_vendor_compare(text, text, text),
   pc_product_payments(text) to anon, authenticated;

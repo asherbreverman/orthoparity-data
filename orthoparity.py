@@ -2,7 +2,7 @@
 
     python orthoparity.py                  list every step and group
     python orthoparity.py <step> [args]    run one step, for example: python orthoparity.py load-fda
-    python orthoparity.py <group>          run a group of steps in order: predicates, payments, site-data, all
+    python orthoparity.py <group>          run a group of steps in order: predicates, payments, recalls, medicare, site-data, all
 
 On Windows you can double-click run.bat instead; it sets up Python and then runs this file.
 Every step reads its settings from config.ini and is safe to run again. Long downloads resume where they stopped.
@@ -60,6 +60,10 @@ RECALL_STEPS = [
     ("fetch-recalls", "pipeline.fetch_recalls",
      "Download FDA device recalls for every orthopedic product code from openFDA and link them to vendors."),
 ]
+MEDICARE_STEPS = [
+    ("load-medicare-hospitals", "pipeline.load_medicare",
+     "Build the procedure view from CMS Medicare inpatient and outpatient hospital payments (national, no charges)."),
+]
 TOOL_STEPS = [
     ("lookup", "tools.lookup", "Look up one device's ancestor chain from the command line."),
     ("lookup-app", None, "Open the local lookup app in your browser (Streamlit)."),
@@ -80,17 +84,20 @@ GROUPS = {
     "predicates": PREDICATE_STEPS,
     "payments": PAYMENT_STEPS,
     "recalls": RECALL_STEPS,
+    "medicare": MEDICARE_STEPS,
     "site-data": [s for s in PREDICATE_STEPS if s[0] == "export-predicates"]
-                 + [s for s in PAYMENT_STEPS if s[0] == "export-payments"],
-    "all": PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS,
+                 + [s for s in PAYMENT_STEPS if s[0] == "export-payments"] + MEDICARE_STEPS,
+    "all": PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + MEDICARE_STEPS,
 }
-STEPS = {name: (module, what) for name, module, what in PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + TOOL_STEPS}
+STEPS = {name: (module, what) for name, module, what
+         in PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + MEDICARE_STEPS + TOOL_STEPS}
 
 
 def show_help() -> None:
     print(__doc__.strip().splitlines()[0])
     for title, steps in (("Build the predicate data", PREDICATE_STEPS), ("Build the vendor and payment data",
-                         PAYMENT_STEPS), ("Recalls", RECALL_STEPS), ("Tools", TOOL_STEPS)):
+                         PAYMENT_STEPS), ("Recalls", RECALL_STEPS), ("Medicare procedure view", MEDICARE_STEPS),
+                         ("Tools", TOOL_STEPS)):
         print(f"\n{title}:")
         for name, _, what in steps:
             print(f"  {name:<26}{what}")

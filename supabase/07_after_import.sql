@@ -29,4 +29,11 @@ union all select 'pc_op_research', count(*) from pc_op_research
 union all select 'pc_op_relationship', count(*) from pc_op_relationship
 union all select 'pc_op_ownership', count(*) from pc_op_ownership
 union all select 'pc_recalls', count(*) from pc_recalls
+union all select 'pc_vendor_divestitures', count(*) from pc_vendor_divestitures
+union all select 'pc_procedures', count(*) from pc_procedures
+union all select 'pc_procedure_drg', count(*) from pc_procedure_drg
+union all select 'pc_procedure_apc', count(*) from pc_procedure_apc
+union all select 'pc_procedure_outpatient', count(*) from pc_procedure_outpatient
+union all select 'pc_procedure_devices', count(*) from pc_procedure_devices
+union all select 'pc_supply_evidence', count(*) from pc_supply_evidence
 order by 1;

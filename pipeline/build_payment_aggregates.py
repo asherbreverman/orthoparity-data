@@ -31,7 +31,7 @@ import time
 from predicate_chain.config import load_config
 from predicate_chain.paycommon import PaySettings, connect_duck, mark_step, step_done
 
-ROLLUP_RELATIONS = ("acquired by", "merged into", "owned by", "hardware and biologics assets acquired by")
+ROLLUP_RELATIONS = ("acquired by", "merged into", "owned by", "hardware and biologics assets acquired by", "became part of")
 DEDICATED_SHARE = 0.8
 
 NATURE_SQL = """CASE
@@ -90,7 +90,8 @@ def build(con, cfg) -> dict:
         FROM vendor_lineage l JOIN listed_vendors p ON p.vendor_id = l.parent
         WHERE ({rel})""")
     # current owner: follow open-ended edges up to three levels
-    con.execute("""CREATE OR REPLACE TEMP TABLE cur_parent AS
+    # kept (not temporary): export_payments writes it as pc_vendors.rolls_up_to for every vendor, with or without payments
+    con.execute("""CREATE OR REPLACE TABLE cur_parent AS
         WITH e AS (SELECT child, parent FROM edges WHERE vt >= DATE '2999-01-01')
         SELECT v.vendor_id, coalesce(e3.parent, e2.parent, e1.parent, v.vendor_id) AS vendor_current
         FROM vendors v LEFT JOIN e e1 ON e1.child = v.vendor_id LEFT JOIN e e2 ON e2.child = e1.parent
