@@ -36,4 +36,13 @@ union all select 'pc_procedure_apc', count(*) from pc_procedure_apc
 union all select 'pc_procedure_outpatient', count(*) from pc_procedure_outpatient
 union all select 'pc_procedure_devices', count(*) from pc_procedure_devices
 union all select 'pc_supply_evidence', count(*) from pc_supply_evidence
+union all select 'pc_maude_product', count(*) from pc_maude_product
+union all select 'pc_maude_year', count(*) from pc_maude_year
+union all select 'pc_establishment', count(*) from pc_establishment
+union all select 'pc_establishment_510k', count(*) from pc_establishment_510k
+union all select 'pc_inspection', count(*) from pc_inspection
+union all select 'pc_inspection_citation', count(*) from pc_inspection_citation
+union all select 'pc_compliance_action', count(*) from pc_compliance_action
+union all select 'pc_add_on_payment', count(*) from pc_add_on_payment
+union all select 'pc_add_on_payment_510k', count(*) from pc_add_on_payment_510k
 order by 1;

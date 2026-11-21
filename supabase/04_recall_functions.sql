@@ -81,8 +81,9 @@ begin
                 || (cat->>'companies_last5') || ' companies.', ''),
     case when n_own > 0 then 'Recalls show what went wrong and how the company responded. Most orthopedic recalls are Class II, and many cover labeling or specific lots.'
          else 'A clean record helps, though newer devices have had less time on the market. FDA records start in 2002.' end,
-    case when n_own > 0 then 'What caused the recall, is the correction complete, and are any affected lots in our inventory?'
-         else 'Have this device or its predicates had field safety notices or corrections outside FDA''s recall list?' end,
+    case when n_own > 1 then 'What caused the ' || n_own || ' recalls, are the corrections complete, and are any affected lots in our inventory?'
+         when n_own = 1 then 'What caused the recall, is the correction complete, and are any affected lots in our inventory?'
+         else 'Has FDA or the company issued field safety notices or corrections for this device or its predicates outside FDA''s recall list?' end,
     'recalls')
     || jsonb_build_object('headline', case when n_own > 0 then n_own || ' recall' || case when n_own = 1 then '' else 's' end || ' on this device.'
                                            when n_pred > 0 then 'No recalls on this device.' else 'No recalls on record.' end,

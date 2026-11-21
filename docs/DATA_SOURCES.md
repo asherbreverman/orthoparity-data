@@ -76,6 +76,47 @@ under `[medicare]` for the Medicare files.
   downloaded by `fetch-recalls` for each of the 254 orthopedic product codes.
 - **Version in the published data:** 8,096 recalled products in 2,537 events, 2002 to Nov 14, 2026.
 
+## 7b. openFDA device adverse event reports (MAUDE)
+
+- **What:** FDA's MAUDE database of medical device reports, counted per 510(k) number.
+- **Where:** `https://api.fda.gov/device/event.json`, queried by `fetch-maude` for each clearance in the starting
+  set. A free openFDA API key raises the daily limit from 1,000 to 120,000 requests.
+- **Version in the published data:** openFDA data through Nov 11, 2026: 649,641 reports naming 7,484 orthopedic
+  510(k)s, downloaded Nov 20, 2026. Details in `outputs/MAUDE_Report.txt`.
+
+## 7c. openFDA establishment registration and listing
+
+- **What:** FDA's registry of device establishments (sites) and the devices each one lists, including the 510(k)
+  number when the firm entered it.
+- **Where:** `https://api.fda.gov/device/registrationlisting.json`, queried by `fetch-establishments` for each
+  orthopedic product code. Uses the same openFDA key as MAUDE.
+- **Version in the published data:** downloaded Nov 20, 2026: 101,081 listings, 2,944 sites, 981 of them linked to
+  at least one starting-set 510(k) (25,222 links covering 11,661 of 18,224 clearances). Details in
+  `outputs/Establishments_Report.txt`.
+
+## 7d. FDA Data Dashboard: inspections, 483 citations and compliance actions
+
+- **What:** FDA's published inspection classifications (fiscal year 2009 on), Form 483 citations and compliance
+  actions (warning letters, injunctions, seizures), each keyed by FEI number.
+- **Where:** `https://datadashboard.fda.gov/oii/cd/inspections.htm` (Download Dataset > Entire Inspections Dataset,
+  then Entire Citations Dataset) and `https://datadashboard.fda.gov/oii/cd/complianceactions.htm` (Download
+  Dataset > Entire Dataset). Save the three .xlsx files in the folder named by `[fda_dashboard] DIR`.
+- **Version in the published data:** exported Nov 20, 2026 (inspections through Nov 6, 2026): 346,169 inspection
+  rows, 283,583 citation rows and 178,672 compliance action rows read; 6,529, 5,983 and 139 kept for orthopedic
+  sites. Details in `outputs/FDA_Compliance_Report.txt`.
+
+## 7e. CMS Medicare add-on payments (NTAP and device pass-through)
+
+- **What:** the FY 2027 inpatient new technology add-on payment lists (new, continued, discontinued, with maximum
+  amounts and ICD-10 codes) and the CY 2027 outpatient device pass-through codes.
+- **Where:** FY 2027 IPPS final rule home page, MAC Implementation File 8 (ZIP),
+  `https://www.cms.gov/medicare/payment/prospective-payment-systems/acute-inpatient-pps/fy-2027-ipps-final-rule-home-page`;
+  CY 2027 OPPS final rule (CMS-1850-FC), "2027 FR OPPS Addenda" (ZIP), Addendum B,
+  `https://www.cms.gov/medicare/payment/prospective-payment-systems/hospital-outpatient/regulations-notices/cms-1850-fc`.
+- **Version in the published data:** File 8 (corrected) and the addenda updated Nov 10, 2026, downloaded Nov 20,
+  2026: 12 orthopedic NTAP technologies (3 new, 8 continued, 1 discontinued) and 6 orthopedic pass-through codes.
+  Details in `outputs/Add_on_Payments_Report.txt`.
+
 ## 8. Ownership changes
 
 - **What:** dated acquisitions, mergers and product-line sales, so clearances, payments and recalls roll up to
@@ -113,6 +154,8 @@ under `[medicare]` for the Medicare files.
 ## Human review inputs (in this repository)
 
 - `reference/vendor_families.csv`: name patterns that group a company's many spellings into one vendor.
+- `reference/add_on_payments.csv`: which CMS add-on payment technologies are orthopedic, who makes them and which
+  FDA numbers they map to, each with an FDA source link. `load-add-on-payments` checks it against the CMS files.
 - `reviews/Vendor_Registry_REVIEW.xlsx`: reviewed vendor names, parents and name moves.
 - `reviews/Product_Code_Dictionary_REVIEW.xlsx`: plain-English product code names; a row counts as reviewed only
   when marked Y.

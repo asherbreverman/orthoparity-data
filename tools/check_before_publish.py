@@ -15,7 +15,9 @@ A public Supabase "anon" key is fine to publish; the check reports it as a note.
 from __future__ import annotations
 
 import base64
+import csv
 import fnmatch
+import io
 import json
 import re
 import subprocess
@@ -36,6 +38,7 @@ SECRET_PATTERNS = {
     "Stripe secret key": re.compile(r"\bsk_live_[0-9A-Za-z]{10,}"),
     "Supabase secret key": re.compile(r"\bsb_secret_[0-9A-Za-z_\-]{10,}"),
     "service-role variable": re.compile(r"SERVICE_ROLE_KEY\s*[=:]\s*['\"]?[A-Za-z0-9_\-\.]{20,}"),
+    "openFDA API key": re.compile(r"OPENFDA_API_KEY\s*[=:]\s*['\"]?[A-Za-z0-9]{20,}"),
 }
 JWT = re.compile(r"\beyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}")
 TEN_DIGITS = re.compile(r"(?<![\w.])([12]\d{9})(?![\w.])")
@@ -43,6 +46,30 @@ PERSON_HEADERS = re.compile(r"(first_name|last_name|middle_name|\bnpi\b|_npi\b|p
                             r"physician_name|investigator_name)", re.I)
 # Allowed header names that contain those words but hold no person data.
 HEADER_OK = {"npi_present"}
+
+
+# Columns that hold FDA-assigned numbers (facility FEI, registration, owner/operator, inspection and case IDs).
+# Some of them happen to pass the NPI check digit; they are skipped by the NPI scan and reported as a note.
+FDA_ID_COLUMNS = {"fei_number", "registration_number", "owner_operator_number", "inspection_id", "case_id"}
+
+
+def without_fda_ids(text: str) -> tuple[str, set[str]]:
+    """Return the CSV text with FDA identifier columns blanked, and the values removed."""
+    rows = list(csv.reader(io.StringIO(text)))
+    if not rows:
+        return text, set()
+    cols = [i for i, h in enumerate(rows[0]) if h.strip().lower() in FDA_ID_COLUMNS]
+    if not cols:
+        return text, set()
+    ids = set()
+    for r in rows[1:]:
+        for i in cols:
+            if i < len(r):
+                ids.add(r[i].strip())
+                r[i] = ""
+    out = io.StringIO()
+    csv.writer(out).writerows(rows)
+    return out.getvalue(), ids
 
 
 def npi_valid(s: str) -> bool:
@@ -124,7 +151,14 @@ def check(include_release: bool = False) -> tuple[list[str], list[str]]:
             bad = [h for h in re.split(r"[,\t]", first) if PERSON_HEADERS.search(h) and h.strip().lower() not in HEADER_OK]
             if bad:
                 problems.append(f"{rel}: column header names an individual ({', '.join(bad[:3])})")
-        hits = sorted({n for n in TEN_DIGITS.findall(text) if npi_valid(n)})
+        scan = text
+        if p.suffix.lower() == ".csv":
+            scan, ids = without_fda_ids(text)
+            fda_hits = {n for n in ids if TEN_DIGITS.fullmatch(n) and npi_valid(n)}
+            if fda_hits:
+                notes.append(f"{rel}: {len(fda_hits)} FDA site or case number(s) in {', '.join(sorted(FDA_ID_COLUMNS & set(text.split(chr(10), 1)[0].split(','))))} "
+                             "happen to pass the NPI check digit; those columns hold FDA identifiers, not NPIs")
+        hits = sorted({n for n in TEN_DIGITS.findall(scan) if npi_valid(n)})
         if hits and rel.startswith("tests/"):
             notes.append(f"{rel}: {len(hits)} NPI-shaped number(s) in synthetic test fixtures")
         elif hits:

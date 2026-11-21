@@ -76,6 +76,51 @@ the data can't support is part of the method.
 - **A recall is a fact about a product and a date,** not a measure of a company's overall quality. Recall rates
   depend on reporting practice and portfolio size.
 
+## Adverse event reports (MAUDE)
+
+- **A report is not proof that a device caused an event.** It records what a manufacturer, hospital, clinician or
+  patient told FDA.
+- **Counts are not rates.** FDA publishes no count of devices implanted, so widely used products have more reports.
+- **A report counts only when it names the 510(k) number.** Reports with a missing or wrong number don't match,
+  so product and company counts are a floor. The 649,641 matched reports equal about 48% of the 1,341,166 reports
+  filed under the 254 orthopedic product codes through Nov 11, 2026; the rest name no number, a PMA, or a number
+  outside the starting set.
+- **Reporting practices differ by company,** and lawsuits or recalls can bring a wave of reports in a short time.
+- **Most orthopedic injury reports describe a revision or another operation.**
+- **A product with no matched reports shows no MAUDE section.** That means no report named its 510(k) number, not
+  that nothing happened.
+
+## Manufacturing sites, inspections and warning letters
+
+- **Sites are current registrations only.** A site that closed or stopped making a product drops out, and its
+  older inspections and warning letters drop out with it.
+- **A site links to a company only through 510(k) numbers in its listings.** 11,661 of 18,224 starting-set
+  clearances have at least one site link. Older clearances and products listed without a number have none, so site
+  counts are a floor.
+- **Company and partner sites come from name matching.** A site whose owner's name matches no company name shows as
+  a partner. A rename that no source records can put a company's own site in the partner list.
+- **Inspection data is not complete.** FDA's dashboard leaves out state inspections, pre-approval inspections and
+  inspections still waiting for a final action, and covers fiscal year 2009 on. Foreign sites are inspected less
+  often than US sites.
+- **A classification describes one visit to one site.** NAI, VAI and OAI are FDA's findings for that inspection,
+  not a rating of a company or its products. Partner site results describe the partner firm's own site.
+- **The page shows facts, not a score.** Nothing combines recalls, reports, inspections and warning letters into a
+  grade.
+
+## Medicare add-on payments (NTAP and device pass-through)
+
+- **The list is human-reviewed.** CMS names technologies, not 510(k) numbers. OrthoParity maps each orthopedic
+  technology to its FDA records by hand, with a source link, and checks every row against the CMS files. The map
+  links a whole product line (for example every VADER pedicle system 510(k)), not the single clearance CMS reviewed.
+- **The amount is a ceiling.** NTAP pays up to the maximum shown, and only when a case costs more than the MS-DRG
+  pays. Pass-through pays the hospital's cost for the device, reduced to cost and less any device offset. Neither
+  says what a hospital paid for the device.
+- **Original Medicare only.** Commercial payers and Medicare Advantage plans set their own rules.
+- **Status is for one year.** FY 2027 (inpatient) and CY 2027 (outpatient). Pass-through codes marked "during CY
+  2027" expire in the year; CMS does not list the exact date in Addendum B.
+- **PMA devices have no product page.** Infuse, PearlMatrix, TOPS and TOUCH CMC 1 show on company pages only.
+- **An add-on payment is a payment rule,** not a finding about safety, effectiveness or value.
+
 ## Decision briefs
 
 - **The signal cards follow fixed rules** written in `supabase/05_decision_functions.sql`. They summarize the data

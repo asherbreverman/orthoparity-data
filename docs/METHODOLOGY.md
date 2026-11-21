@@ -230,22 +230,88 @@ record show "NOT FOUND". A recall links to a vendor by a 510(k) number it lists 
 the recalling firm's name (curated patterns, then an exact match after removing punctuation and suffixes). Each
 row records which basis linked it. Impossible dates in openFDA are left blank.
 
+## 16b. Adverse event reports (`fetch-maude`)
+
+MAUDE reports come from the openFDA device adverse event endpoint. Each report carries the premarket number the
+manufacturer entered (`pma_pmn_number`). FDA's data stores some 510(k) numbers with a leading P (PK140881 for
+K140881), so both forms count. For every clearance in the starting set the step counts the reports that name it: all reports by event type (death, injury, malfunction, other or not answered), reports received in the
+last five years by event type, and reports by the year FDA received them. A product's counts are the reports that
+name its own 510(k); a company's counts add up every 510(k) in its family, the same family the portfolio and
+recalls use (parent company, everything it owns, and product lines it bought). The download resumes where it
+stopped and needs a free openFDA API key for the full set (about 30,000 requests).
+
+## 16c. Manufacturing sites and FDA inspections (`fetch-establishments`, `load-fda-compliance`)
+
+Sites come from the openFDA registration and listing endpoint. Every firm that makes, designs, sterilizes, relabels
+or imports devices for the US market registers each site with FDA every year and lists its devices; a listing can
+name the 510(k) it markets under. The step downloads every listing under the 254 orthopedic product codes and keeps
+the link between each site (FEI number) and each starting-set 510(k) it names, with the activities the site
+registered for that product. "Makes" means manufacture, contract manufacture, remanufacture, reprocessing or
+contract sterilization. Contact people, US agents and official correspondents are dropped.
+
+Each site gets a company only when its owner/operator's name matches a name the company files under (the same
+applicant, labeler and payer names the rest of the site uses). Words that every device firm uses (Medical,
+Orthopedics, Spine, Inc, GmbH and similar) never count as a match. When an owner lists 510(k)s of several companies,
+the company holding the most of them wins, but only if its name matches. Distributors, logistics firms and contract
+manufacturers match no company and stay blank.
+
+On a company page, sites fall into three groups. Company sites belong to the company or a company it owns. Partner
+sites belong to firms with no matched company (contract manufacturers, sterilizers, importers, relabelers). Other
+companies' sites belong to a different device company that lists some of this company's 510(k)s, which usually means
+a product line changed hands; they are counted, not mixed in.
+
+Inspections, Form 483 citations and compliance actions come from the FDA Data Dashboard's full exports and are
+kept only for the sites above, joined on FEI number. An inspection can carry several project areas with different
+classifications; the page uses the most serious (OAI over VAI over NAI) and counts device inspections only. The
+five-year window ends on the latest inspection date in the export. Warning letters count once per case number.
+
+## 16d. Medicare add-on payments (`load-add-on-payments`)
+
+Two CMS programs pay hospitals extra for some new technologies. The inpatient new technology add-on payment (NTAP)
+adds to the MS-DRG payment, up to a maximum per case, for a fiscal year (FY 2027 runs October 1, 2026 to September
+30, 2027). Outpatient transitional pass-through pays separately for a device, by HCPCS C-code, for two to three
+years in hospital outpatient departments and ASCs.
+
+CMS names technologies, not 510(k) numbers, so the orthopedic list is human-reviewed. `reference/add_on_payments.csv`
+holds one row per technology and program: the CMS name, status, company, the FDA numbers it maps to with an FDA
+source link, and the starting-set 510(k)s for that product line. Navigation instruments, cement and other accessory
+510(k)s are left out. A PMA device (Infuse, PearlMatrix, TOPS, TOUCH CMC 1) appears on its company page only, since
+the product pages are built from 510(k)s.
+
+The step then checks every reviewed row against the CMS files: each NTAP name must appear in the matching list
+(new, continued or discontinued) of FY 2027 MAC Implementation File 8, and each pass-through code must carry status
+indicator H in CY 2027 OPPS Addendum B with the same expiration flag. Any mismatch stops the step. The maximum add-on,
+ICD-10 codes, APC and short descriptor come from the CMS files, not from the reference file. The report lists every
+CMS technology and pass-through code the reference file leaves out, so a reviewer can confirm nothing orthopedic
+was missed. A product line that changed owners counts under its current owner, the same as the portfolio (Stryker
+bought 4WEB's Ankle Truss System in 2024).
+
 ## 17. Decision briefs (`supabase/05_decision_functions.sql`)
 
-Each product and vendor page ends in a bottom line and a few cards. Every card has a question, a short badge, a
-finding drawn from the data, why it matters, and a question to ask the vendor. The rules are fixed SQL, so the same
-data always gives the same cards. "Last five years" is measured back from the latest clearance date in the data.
+Each product and vendor page has a bottom line and one box (card) per question: 12 on a product page and 11 on a
+vendor page. Every card has a question, a short label for the page's tab bar, a badge, a finding drawn from the
+data, why it matters, and one or more questions to ask the vendor (`asks`; the first is also `ask`). A question
+appears only when the data triggers it, so a product with no studies is asked why, and one with studies is asked
+for the results. Every card shows even when the answer is "none", and missing data reads NOT FOUND with a reason.
+The rules are fixed SQL, so the same data always gives the same cards. "Last five years" is measured back from the
+latest clearance date in the data, or for inspections, from the latest inspection date.
 
 **Product cards**
 
 | Card | Rule |
 |---|---|
 | Is it new? | Line extension when every direct predicate is the same company's; competitive entry when none are; mixed otherwise; "predicate not on file" when no numbered predicate was read. Same company: the cleaned applicant names match, or both applicants belong to vendors with the same owner on the clearance date (the dated roll-up used for payments) |
-| What else does this job? | Other companies with clearances in the same product code in the last five years, grouped by current owner |
-| Financial ties | Open Payments naming this 510(k) or its brand |
-| Evidence | Industry-funded research in Open Payments that names this 510(k) |
-| What will it take to stock? | GUDID device IDs citing this 510(k), how many are in distribution, and the category median |
-| Recalls | Recalls naming this 510(k), and recalls naming its direct predicates |
+| What is it cleared to treat? | The Indications for Use extracted from the 510(k) summary, and how closely its wording matches the primary predicate's (trigram similarity: same wording at 90% or more, close at 60% or more, otherwise differs). A wording comparison, not a clinical judgment |
+| Who sells it today? | The 510(k) holder at clearance against the company that owns the product line now (vendor roll-up and dated product-line sales) |
+| What else does the job? | Other companies with clearances in the same product code in the last five years, grouped by current owner |
+| What are the financial ties for this product? | Open Payments naming this 510(k) or its brand |
+| What clinical evidence exists? | Industry-funded research in Open Payments that names this 510(k), and ClinicalTrials.gov numbers on those records |
+| What will it take to stock on the shelf? | GUDID device IDs citing this 510(k), how many are in distribution, and the category median |
+| Any recalls? | Recalls naming this 510(k), and recalls naming its direct predicates |
+| Any adverse events? | MAUDE reports naming this 510(k): all years, the last five years by type, and the median for its product code |
+| What is the vendor's supplier record? | Registered sites that list this 510(k), with device inspections, OAI classifications and warning letters at those sites in the last five years |
+| What does Medicare pay for procedures that use it? | The procedure family its product code maps to: the DRGs, the range of average Medicare payments per case by DRG, discharges and the published implant-cost range. Procedure-level, not product-level, with the mapping's review status |
+| Any Medicare add-on payments? | FY 2027 inpatient NTAP and CY 2027 outpatient pass-through for this product line, and others in its product code |
 
 **Vendor cards**
 
@@ -253,11 +319,15 @@ data always gives the same cards. "Last five years" is measured back from the la
 |---|---|
 | Where do they compete? | Product codes in the portfolio, active codes in the last five years, and categories where the vendor is a top-3 filer. Broad at 12 or more codes, focused at 3 or fewer |
 | Are they still investing? | Clearances in the last five years against the five before: more (20% or more up), fewer (20% or more down), steady, new entrant, or none recent |
-| Ownership | Acquisitions by the vendor in the last five years (older ones listed as earlier), and the vendor's current owner if another company bought it |
-| Payments | Latest year's total and recipients, consulting recipients, royalty share, physician owners |
-| Evidence | Research studies funded, in orthopedic scope |
-| Supply | GUDID brands, and brands with no device ID still in commercial distribution |
-| Recalls | Recall events and Class I recalls |
+| Have any acquisitions or mergers occurred? | Acquisitions by the vendor in the last five years (older ones listed as earlier), and the vendor's current owner if another company bought it |
+| What are the financial ties for this vendor? | Latest year's total and recipients, consulting recipients, royalty share, physician owners |
+| Are they building clinical evidence? | Research studies funded, in orthopedic scope, and how many carry ClinicalTrials.gov numbers |
+| Is the portfolio in distribution? | GUDID brands, and brands with no device ID still in commercial distribution |
+| Any recalls? | Recall events and Class I recalls |
+| Any adverse events? | MAUDE reports across the company's 510(k)s, and the product with the most recent reports |
+| What is the vendor's supplier record? | Company and partner sites, countries, device inspections and warning letters (see section 16c) |
+| What does Medicare pay for procedures that use their products? | The procedure families its product codes map to, and the payment range for the family with its most recent clearances |
+| Any Medicare add-on payments? | Its technologies with a FY 2027 NTAP or a CY 2027 pass-through code |
 
 ## 18. Medicare payments by procedure (`load-medicare-hospitals`)
 

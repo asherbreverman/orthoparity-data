@@ -210,6 +210,69 @@ One row per recalled product: recall number, event, dates, FDA class, product co
 
 Columns: `recall_number`, `event_id`, `initiated`, `posted`, `terminated`, `status`, `recall_class`, `product_code`, `knumbers`, `recalling_firm`, `vendor_id`, `vendor_basis`, `product`, `reason`, `root_cause`, `quantity`
 
+### pc_maude_product
+One row per 510(k) with at least one MAUDE report naming it (`fetch-maude`). The five-year counts cover reports FDA
+received from `window_start` on.
+
+Columns: `knumber`, `reports`, `deaths`, `injuries`, `malfunctions`, `other`, `reports_last5`, `deaths_last5`, `injuries_last5`, `malfunctions_last5`, `other_last5`, `first_year`, `last_year`, `window_start`, `data_through`
+
+### pc_maude_year
+Reports per 510(k) per year FDA received them.
+
+Columns: `knumber`, `year`, `reports`
+
+## Manufacturing site tables (`fetch-establishments`, `load-fda-compliance`)
+
+### pc_establishment
+One row per registered site under the orthopedic product codes. `fei_number` is FDA's site ID (R plus the
+registration number when FDA lists no FEI). `company_vendor_id` is the parent company the owner/operator matches, or
+blank. `makes_devices` is true when the site registered as a manufacturer, contract manufacturer, remanufacturer,
+reprocessor or contract sterilizer. `knumbers` counts the starting-set 510(k)s it lists.
+
+Columns: `fei_number`, `registration_number`, `name`, `city`, `state`, `country`, `owner_operator_number`,
+`owner_operator_name`, `company_vendor_id`, `reg_expiry_year`, `activities`, `makes_devices`, `product_codes`,
+`knumbers`
+
+### pc_establishment_510k
+One row per site and starting-set 510(k) it lists, with the activities it registered for that product.
+
+Columns: `fei_number`, `knumber`, `activities`, `makes_device`, `proprietary_names`
+
+### pc_inspection
+FDA inspection classifications for those sites, one row per inspection and project area.
+
+Columns: `inspection_id`, `fei_number`, `legal_name`, `fiscal_year`, `end_date`, `classification`, `project_area`,
+`product_type`, `posted_citations`
+
+### pc_inspection_citation
+Form FDA 483 citations from those inspections.
+
+Columns: `inspection_id`, `fei_number`, `end_date`, `program_area`, `cfr`, `short_description`
+
+### pc_compliance_action
+Warning letters, injunctions and seizures for those sites.
+
+Columns: `case_id`, `fei_number`, `legal_name`, `action_date`, `action_type`, `product_type`
+
+## Medicare add-on payment tables (`load-add-on-payments`)
+
+### pc_add_on_payment
+One row per orthopedic technology and program. `program` is NTAP (inpatient new technology add-on payment) or TPT
+(outpatient transitional pass-through). `status` is new, continued or discontinued for NTAP, and new or continuing
+for TPT. `max_payment` is the most NTAP adds per case (for a discontinued NTAP, the FY 2026 maximum). `cms_codes`
+holds the ICD-10 codes CMS uses to identify eligible cases; `hcpcs`, `apc` and `cms_descriptor` describe a
+pass-through code. `pass_through_ends` says whether the code expires during CY 2027. `vendor_id` is the company the
+linked 510(k)s belong to, or the company CMS names for a PMA device.
+
+Columns: `tech_id`, `program`, `period`, `status`, `technology`, `company`, `vendor_id`, `fda_numbers`, `hcpcs`,
+`cms_descriptor`, `apc`, `max_payment`, `cms_codes`, `pathway`, `effective`, `pass_through_ends`, `cms_source`,
+`fda_source`, `note`
+
+### pc_add_on_payment_510k
+One row per technology and starting-set 510(k) it maps to.
+
+Columns: `tech_id`, `knumber`, `vendor_id`, `product_code`
+
 ## Medicare procedure tables (`load-medicare-hospitals`)
 
 National figures for data year 2024. Dollar amounts are per case, rounded to whole dollars. No hospital names, IDs

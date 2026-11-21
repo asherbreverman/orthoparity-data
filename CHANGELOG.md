@@ -1,5 +1,117 @@
 # Changelog
 
+## Draft labels cleared (2026-11-20)
+
+The project owner reviewed every hand-made entry the site labeled as draft (`Reviews/OrthoParity_Draft_Review_EASY.xlsx`,
+outside the repo).
+
+- Plain-English product code dictionary: all 254 codes reviewed (`reviews/Product_Code_Dictionary_REVIEW.xlsx`).
+  233 approved as drafted, 21 corrected against FDA's definitions. Examples: HSX and HRY now say "partial or total
+  knee" (most of their clearances are partial knees); SJA is a cold, not heat, nerve treatment; QHG is the Barricaid
+  spinal disc tray, not a cartilage tool; OSF and OJP are hip and knee guidance, not spine; NOV is a facial anchor.
+- Product-code-to-procedure links: 134 approved, 3 removed (OJP from lumbar and cervical fusion: its clearances
+  are hip and knee robots; KWI radial head from shoulder and elbow replacement: DRG 483 lists elbow joint
+  replacement, not replacement of the radius), 1 added (PHQ anterior cervical staple to cervical fusion). Total
+  ankle and total wrist stay unlinked: CMS pays them under the hip-knee and shoulder-elbow DRGs, but the family
+  names would mislabel them.
+- The 7 procedure families added on 2026-11-19 are approved.
+
+CSVs to re-import: `pc_product_codes.csv`, `pc_procedure_devices.csv`. No SQL changes.
+
+## Question boxes and vendor questions (2026-11-20)
+
+**Product pages ask 12 questions; vendor pages ask 11.** Every box is phrased as a question, shows even when the
+answer is "none", and carries a short label for the tab bar. Each card now has `asks`, a list of questions for the
+vendor that the data triggers (the first is still `ask`), so the "Questions for the vendor" list grows to about 16
+to 22 per page. Changes in `supabase/05_decision_functions.sql`; new `pc_device_supplier` in `10_supplier_functions.sql`.
+
+- Product boxes: Is it new? · What is it cleared to treat? (new) · Who sells it today? (new) · What else does the
+  job? · What are the financial ties for this product? · What clinical evidence exists? · What will it take to
+  stock on the shelf? · Any recalls? · Any adverse events? (new) · What is the vendor's supplier record? (new) ·
+  What does Medicare pay for procedures that use it? (new) · Any Medicare add-on payments? (new)
+- Vendor boxes: Where do they compete? · Are they still investing? · Have any acquisitions or mergers occurred?
+  (reworded) · What are the financial ties for this vendor? (reworded) · Are they building clinical evidence? ·
+  Is the portfolio in distribution? · Any recalls? · Any adverse events? (new) · What is the vendor's supplier
+  record? (new) · What does Medicare pay for procedures that use their products? (new) · Any Medicare add-on
+  payments? (new)
+- New questions cover devices cleared on the same predicates and in the same product code, surgeon royalties and
+  consulting rates at the asking hospital, the payments that name a product, study results and ClinicalTrials.gov
+  postings, the GUDID part-number list, recalls on predicates, adverse event counts by type, manufacturing sites,
+  contract manufacturers, foreign sites, OAI inspections and warning letters, construct cost against the Medicare
+  payment, and add-on payment coding.
+- The Medicare box is procedure-level: it names the procedure family, its DRGs and the payment range per case, and
+  says the payment covers the whole stay and every implant in it.
+- The indications box compares wording with the primary predicate's (trigram similarity); it is not a judgment of
+  clinical scope.
+
+SQL files to run: `04`, `05`, `10`. No new tables.
+
+## Medicare add-on payments: NTAP and device pass-through (2026-11-20)
+
+**Which orthopedic technologies get extra Medicare payment.** New step `load-add-on-payments` and new group `addon`.
+It reads two CMS files, FY 2027 MAC Implementation File 8 (inpatient NTAP) and CY 2027 OPPS Addendum B (outpatient
+device pass-through), and checks the new human-reviewed file `reference/add_on_payments.csv` against them. New tables
+`pc_add_on_payment` and `pc_add_on_payment_510k`; new functions `pc_device_add_on` and `pc_vendor_add_on` in
+`supabase/11_add_on_functions.sql`.
+
+- 12 orthopedic NTAP technologies for FY 2027: 3 new (CMORE CT System, Infuse Bone Graft for TLIF, PearlMatrix
+  P-15), 8 continued (VADER Pedicle System, 4WEB Ankle Truss System, aprevo-C, CERAMENT G for open fractures, EUROPA
+  Posterior Cervical Fusion System, iFuse TORQ TNT, MY01, restor3d TIDAL Fusion Cage) and 1 discontinued (TOPS).
+- 6 orthopedic device pass-through codes for CY 2027: C1737 (iFuse Bedrock Granite, expires during 2027), C1741
+  (RemeOs), C1742 (MY01), C1608 (TOUCH CMC 1), C1609 (TOPS) and C1610 (TIDAL Fusion Cage, new January 1, 2027).
+- They link to 25 starting-set 510(k)s. PMA devices show on company pages only.
+- The step stops if any reviewed name, status, code or expiration flag disagrees with CMS, and its report lists
+  every CMS technology the reference file leaves out (61 NTAP technologies and 13 pass-through codes; on review,
+  none is orthopedic).
+
+Tables to re-import: `pc_add_on_payment`, `pc_add_on_payment_510k` (new). SQL files to run: `01`, `07`, `11`.
+
+## Supplier record: manufacturing sites, inspections and warning letters (2026-11-20)
+
+**Who makes the product, and what FDA found there.** New steps `fetch-establishments` and `load-fda-compliance`
+and new group `supplier`. The first downloads FDA establishment registrations from openFDA for the 254 orthopedic
+product codes and links each site (FEI number) to the starting-set 510(k)s it lists. The second reads three FDA Data
+Dashboard exports (inspections, Form 483 citations, compliance actions) and keeps the rows for those sites. New
+tables `pc_establishment`, `pc_establishment_510k`, `pc_inspection`, `pc_inspection_citation` and
+`pc_compliance_action`; new function `pc_vendor_supplier` in `supabase/10_supplier_functions.sql`.
+
+- 2,944 sites list devices under the orthopedic codes; 981 list at least one starting-set 510(k), covering 11,661
+  of 18,224 clearances. 612 of the 981 make, contract-make, remanufacture or sterilize.
+- Each site gets a company only when its owner/operator's name matches a name the company files under. Logistics
+  firms, distributors and contract manufacturers stay unmatched and show as partner sites. Sites of other device
+  companies that list a company's older 510(k)s (usually a product line that changed hands) are counted
+  separately.
+- Kept for those sites: 6,529 inspection rows (fiscal year 2009 through Nov 6, 2026), 5,983 citation rows and 139
+  compliance actions (all warning letters).
+- The company page gets one place for recalls, MAUDE reports, inspections, 483 citations and warning letters.
+  Facts only: nothing scores or grades a company.
+- Contact people, US agents and official correspondents from the registrations are never kept.
+- Some FDA site and case numbers happen to pass the NPI check digit. `check` now skips columns that hold FDA
+  identifiers (`fei_number`, `registration_number`, `owner_operator_number`, `inspection_id`, `case_id`) and lists
+  them as a note; every other column is still scanned.
+
+Tables to re-import: the five new tables above. SQL files to run: `01`, `07`, `10`.
+
+## Adverse event reports (MAUDE) (2026-11-20)
+
+**MAUDE counts per 510(k).** New step `fetch-maude` and new group `maude`. It counts FDA adverse event reports
+from openFDA for every clearance in the starting set, matched on the 510(k) number each report names: all
+reports by event type, the last five years by event type, and reports by year received. It writes
+`pc_maude_product` and `pc_maude_year`; new functions `pc_device_maude` and `pc_vendor_maude` in
+`supabase/09_maude_functions.sql`. Company counts add up every 510(k) in the company's family, the same family
+the portfolio and recalls use.
+
+- 649,641 reports matched to 7,484 of 18,224 orthopedic 510(k)s (1,093 deaths, 443,643 injuries, 200,304
+  malfunctions, 4,601 other or not answered), openFDA data through Nov 11, 2026. That equals about 48% of the
+  1,341,166 reports filed under the 254 orthopedic product codes.
+- FDA's data stores some 510(k) numbers with a leading P (PK140881 for K140881). Both forms count.
+- A free openFDA API key goes in `.env` (or `.env.txt`) in the project folder; both are excluded from git, and
+  `check` now flags an openFDA key in any published file.
+- Limitations and the site's notes say plainly that a report is not proof of cause, counts are not rates, and
+  counts are a floor.
+
+Tables to re-import: `pc_maude_product`, `pc_maude_year` (new). SQL files to run: `01`, `07`, `09`.
+
 ## Medicare procedure view and parent-company benchmarking (2026-11-19)
 
 **Medicare payments by procedure.** New step `load-medicare-hospitals` and new group `medicare`. It reads the CMS

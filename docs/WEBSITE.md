@@ -20,7 +20,9 @@ Each returns JSON (or rows) and is callable with the public anon key.
 |---|---|---|
 | `pc_search(q)` | Search | Devices matching a K-number, name or company |
 | `pc_brief(k)` | Product | Everything on the device page: identity, predicates, lineage, peers, category, IFU, VAC questions |
-| `pc_signals(k)` | Product | The decision brief: bottom line and signal cards |
+| `pc_signals(k)` | Product | The decision brief: bottom line and 12 question cards, each with its questions for the vendor (`asks`) |
+| `pc_device_indications(k)` | Product | Indications for Use and the primary predicate's, with a wording similarity |
+| `pc_device_supplier(k)` | Product | Registered sites that list this 510(k), with their inspections and warning letters |
 | `pc_lookup(roots, max_gen)` | Product | The full predicate chain as nodes, edges and flags |
 | `pc_brand_family(k)` | Product | Other clearances with the same brand word |
 | `pc_direct`, `pc_peers`, `pc_category`, `pc_primary_lineage` | Product | Pieces of the brief, callable on their own |
@@ -32,10 +34,15 @@ Each returns JSON (or rows) and is callable with the public anon key.
 | `pc_device_owner(k)` | Product | The FDA filer and the parent company that owns the product today |
 | `pc_vendor_coverage()` | Home | Parent companies and filer companies with 510(k) clearances, first and last year |
 | `pc_vendor_brief(v, mode)` | Vendor | Everything on the vendor page |
-| `pc_vendor_signals(v, mode)` | Vendor | The vendor decision brief |
+| `pc_vendor_signals(v, mode)` | Vendor | The vendor decision brief: 11 question cards with questions for the vendor |
 | `pc_vendor_portfolio(v, mode, ...)` | Vendor | The vendor's 510(k)s, filterable by anatomy, kind and product code |
 | `pc_vendor_compare(a, b, mode)` | Comparisons | Two vendors side by side |
 | `pc_vendor_recalls(v, mode)` | Vendor | The vendor's recall events |
+| `pc_device_maude(k)` | Product | MAUDE reports naming this 510(k): by type, by year, last five years, product code context |
+| `pc_vendor_maude(v, mode, lim)` | Vendor | MAUDE reports across the company's 510(k)s, by year, and its products with the most recent reports |
+| `pc_device_add_on(k)` | Product | Medicare add-on payments (NTAP, device pass-through) for this 510(k)'s product line, and others in the same product code |
+| `pc_vendor_add_on(v, mode)` | Vendor | Medicare add-on payments for the company's technologies, with how many of its 510(k)s each covers |
+| `pc_vendor_supplier(v, mode)` | Vendor | Supplier record: company and partner sites, device inspections (last five years and since 2009), top 483 citations, warning letters, plus the recall and MAUDE figures |
 | `pc_procedure_list()` | Procedures | Every procedure family with volume and payments |
 | `pc_procedure(fid)` | Procedures | One family: DRGs, outpatient status, device categories with vendors, evidence, worksheet |
 | `pc_vendor_procedures(v, mode)` | Vendor | The procedure families where a vendor has device categories |

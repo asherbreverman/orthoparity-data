@@ -5,7 +5,7 @@ to run again, and none of them writes data except `07_after_import.sql`, which t
 
 | File | What it creates |
 |---|---|
-| `01_tables.sql` | 27 tables, their indexes, and public read-only access (anyone can read, nobody can write) |
+| `01_tables.sql` | 36 tables, their indexes, and public read-only access (anyone can read, nobody can write) |
 | `02_device_functions.sql` | Device search, predicate chains, the device brief, peers, compare and batch |
 | `03_vendor_functions.sql` | Vendor search, the parent-company redirect, portfolio, vendor brief, vendor compare, product payments, home page counts |
 | `04_recall_functions.sql` | Recall lookups and the recall cards |
@@ -13,11 +13,14 @@ to run again, and none of them writes data except `07_after_import.sql`, which t
 | `06_admin.sql` | Two maintenance functions (not callable from the website) and a 15-second query timeout |
 | `07_after_import.sql` | Run after every CSV import: turns blank cells into NULL, marks research rows in orthopedic scope, prints row counts |
 | `08_procedure_functions.sql` | The procedure view (Medicare payments by procedure family) and the procedure links on device pages |
+| `09_maude_functions.sql` | FDA adverse event reports (MAUDE) for products and companies |
+| `10_supplier_functions.sql` | The supplier record on company pages: manufacturing sites, FDA inspections, 483 citations and warning letters |
+| `11_add_on_functions.sql` | Medicare add-on payments (NTAP and device pass-through) for products and companies |
 
 ## Build a new database
 
 1. Create a Supabase project. In the SQL Editor, open a new query, paste `01_tables.sql`, and press Run.
-   Repeat for `02` through `06`, then `08`, in number order. (`07` comes after the import in step 3.)
+   Repeat for `02` through `06`, then `08` through `11`, in number order. (`07` comes after the import in step 3.)
 2. Import the CSV files. Get them from the latest GitHub release (`site_data_YYYY-MM-DD.zip`) or build them
    yourself with `python orthoparity.py all`. Each file goes into the table with the same name
    (`pc_devices.csv` into `pc_devices`, and so on).
@@ -28,6 +31,13 @@ to run again, and none of them writes data except `07_after_import.sql`, which t
 
 ## Update an existing database
 
+- Medicare add-on payments (2026-11-20): run `01_tables.sql` (it only adds `pc_add_on_payment` and
+  `pc_add_on_payment_510k`), import the two new CSVs, run `07_after_import.sql`, then run `11_add_on_functions.sql`.
+- Supplier record (2026-11-20): run `01_tables.sql` (it only adds `pc_establishment`, `pc_establishment_510k`,
+  `pc_inspection`, `pc_inspection_citation` and `pc_compliance_action`; existing data stays), import the five new
+  CSVs, run `07_after_import.sql`, then run `10_supplier_functions.sql`. Needs `09_maude_functions.sql` first.
+- Adverse event reports (2026-11-20): run `01_tables.sql` (it only adds `pc_maude_product` and `pc_maude_year`;
+  existing data stays), import the two new CSVs, run `07_after_import.sql`, then run `09_maude_functions.sql`.
 - Parent companies and 15 procedure families (2026-11-19): run `01_tables.sql` (it adds the
   `pc_vendor_divestitures` table and two note columns; existing data stays), then `02`, `03`, `05` and `08`.
   Empty and re-import the changed tables (list in `CHANGELOG.md`), then run `07_after_import.sql`.

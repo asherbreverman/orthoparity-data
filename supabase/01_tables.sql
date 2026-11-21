@@ -190,6 +190,47 @@ create index if not exists pc_procedure_devices_f on pc_procedure_devices (famil
 create index if not exists pc_procedure_devices_code on pc_procedure_devices (product_code);
 create index if not exists pc_portfolio_510k_code on pc_portfolio_510k (product_code, decision_date);
 
+-- ---------------------------------------------------------------- FDA adverse event reports (MAUDE), counted per 510(k)
+-- added 2026-11-20. A report counts only when it names the 510(k) number. Counts are not rates.
+create table if not exists pc_maude_product (
+  knumber text primary key, reports integer, deaths integer, injuries integer, malfunctions integer, other integer,
+  reports_last5 integer, deaths_last5 integer, injuries_last5 integer, malfunctions_last5 integer, other_last5 integer,
+  first_year integer, last_year integer, window_start date, data_through date);
+create table if not exists pc_maude_year (knumber text, year integer, reports integer, primary key (knumber, year));
+
+-- ---------------------------------------------------------------- manufacturing sites and FDA inspections
+-- Sites come from openFDA registration and listing (current registrations); inspections, 483 citations and
+-- compliance actions come from the FDA Data Dashboard and are kept only for those sites.
+create table if not exists pc_establishment (
+  fei_number text primary key, registration_number text, name text, city text, state text, country text,
+  owner_operator_number text, owner_operator_name text, company_vendor_id text, reg_expiry_year integer, activities text,
+  makes_devices boolean, product_codes text, knumbers integer);
+create table if not exists pc_establishment_510k (
+  fei_number text, knumber text, activities text, makes_device boolean, proprietary_names text,
+  primary key (fei_number, knumber));
+create table if not exists pc_inspection (
+  inspection_id text, fei_number text, legal_name text, fiscal_year integer, end_date date, classification text,
+  project_area text, product_type text, posted_citations boolean);
+create table if not exists pc_inspection_citation (
+  inspection_id text, fei_number text, end_date date, program_area text, cfr text, short_description text);
+create table if not exists pc_compliance_action (
+  case_id text, fei_number text, legal_name text, action_date date, action_type text, product_type text);
+create index if not exists pc_establishment_510k_k on pc_establishment_510k (knumber);
+create index if not exists pc_inspection_fei on pc_inspection (fei_number);
+create index if not exists pc_inspection_citation_id on pc_inspection_citation (inspection_id);
+create index if not exists pc_compliance_action_fei on pc_compliance_action (fei_number);
+
+-- ---------------------------------------------------------------- Medicare add-on payments (NTAP and device pass-through)
+-- Orthopedic technologies with a current inpatient new technology add-on payment (NTAP) or an outpatient device
+-- pass-through code, checked against the CMS files; links go to the starting-set 510(k)s they map to.
+create table if not exists pc_add_on_payment (
+  tech_id text primary key, program text, period text, status text, technology text, company text, vendor_id text,
+  fda_numbers text, hcpcs text, cms_descriptor text, apc text, max_payment numeric, cms_codes text, pathway text,
+  effective date, pass_through_ends text, cms_source text, fda_source text, note text);
+create table if not exists pc_add_on_payment_510k (
+  tech_id text, knumber text, vendor_id text, product_code text, primary key (tech_id, knumber));
+create index if not exists pc_add_on_payment_510k_k on pc_add_on_payment_510k (knumber);
+
 -- ---------------------------------------------------------------- public read-only access
 -- Anyone can read these tables and call the public functions; nobody can write through the website.
 grant usage on schema public to anon, authenticated;
@@ -200,7 +241,9 @@ begin
     'pc_vendors','pc_vendor_names','pc_vendor_lineage','pc_portfolio_brands','pc_portfolio_510k',
     'pc_op_vendor_year','pc_op_vendor_profile','pc_op_entity','pc_op_product','pc_op_product_top','pc_op_research',
     'pc_op_relationship','pc_op_ownership','pc_recalls','pc_vendor_divestitures','pc_procedures','pc_procedure_drg','pc_procedure_apc',
-    'pc_procedure_outpatient','pc_procedure_devices','pc_supply_evidence']
+    'pc_procedure_outpatient','pc_procedure_devices','pc_supply_evidence','pc_maude_product','pc_maude_year',
+    'pc_establishment','pc_establishment_510k','pc_inspection','pc_inspection_citation','pc_compliance_action',
+    'pc_add_on_payment','pc_add_on_payment_510k']
   loop
     execute format('alter table %I enable row level security', t);
     execute format('drop policy if exists "public read" on %I', t);

@@ -37,6 +37,10 @@ answer. A payment or a recall is a fact to ask about, never a judgment of a comp
 | FDA GUDID full release | Device IDs, brands, catalog size | 5,258,157 device records, November 2026 release |
 | CMS Open Payments | Industry payments to surgeons and teaching hospitals | Program years 2019 to 2025 |
 | openFDA device recalls | Recalls and FDA recall class | 8,096 recalled products in 2,537 events, 2002 to Nov 14, 2026 |
+| openFDA adverse event reports (MAUDE) | Reports naming each orthopedic 510(k), by type and year | 649,641 reports naming 7,484 510(k)s, through Nov 11, 2026 |
+| openFDA establishment registration and listing | Sites that list each orthopedic 510(k), and what they do | 981 sites linked to 11,661 510(k)s, Nov 20, 2026 |
+| FDA Data Dashboard | Device inspections, Form 483 citations and warning letters for those sites | Fiscal year 2009 through Nov 6, 2026 |
+| CMS add-on payments | Orthopedic technologies with an inpatient NTAP or outpatient device pass-through code | FY 2027 NTAP, CY 2027 OPPS |
 | CMS Medicare hospital payments | Inpatient payments by DRG, outpatient by APC | Data year 2024: 2,906 inpatient and 3,126 outpatient hospitals |
 | SEC filings, company releases, business and trade press | Dated ownership changes | 83 dated links and 5 product-line sales, each with a source link |
 
@@ -48,10 +52,13 @@ answer. A payment or a recall is a fact to ask about, never a judgment of a comp
 FDA release files ─┐
 Summary PDFs ──────┼─> predicate database (SQLite) ─┐
 FDA product codes ─┘                                 │
-GUDID ─────────────┐                                 ├─> 27 CSV files ─> Supabase (Postgres) ─> website
+GUDID ─────────────┐                                 ├─> 36 CSV files ─> Supabase (Postgres) ─> website
 Open Payments ─────┼─> payments database (DuckDB) ───┤
 vendor registry ───┘                                 │
 openFDA recalls ─────────────────────────────────────┤
+openFDA adverse event reports (MAUDE) ───────────────┤
+openFDA establishments + FDA Data Dashboard ─────────┤
+CMS add-on payments (NTAP, pass-through) ────────────┤
 CMS Medicare hospital payments ──────────────────────┘
 ```
 
@@ -62,6 +69,9 @@ One command runs any step: `python orthoparity.py <step>`. Run it with no step t
 | `predicates` | load-fda, extract-predicates, walk-ancestors, import-review, extract-ifu, product-dictionary, export-predicates |
 | `payments` | index-gudid, load-open-payments, build-vendor-registry, match-products, build-payment-aggregates, validate-payments, repair-text, export-payments |
 | `recalls` | fetch-recalls |
+| `maude` | fetch-maude (needs a free openFDA API key) |
+| `supplier` | fetch-establishments, load-fda-compliance (needs the openFDA key and three FDA Data Dashboard exports) |
+| `addon` | load-add-on-payments (needs two CMS ZIP files) |
 | `medicare` | load-medicare-hospitals |
 | `all` | all of the above |
 
@@ -117,6 +127,12 @@ Read `docs/LIMITATIONS.md` before relying on any number. The short version:
   where the public record stops, not necessarily the original design.
 - Open Payments shows reported payments only, and a payment is not evidence of influence.
 - Recall reporting and recall classes come from FDA as published; older recalls have no class in openFDA.
+- A MAUDE report is not proof that a device caused an event, and counts are not rates. A report counts toward a
+  product only when it names the 510(k) number, so counts are a floor.
+- Manufacturing sites are current FDA registrations linked by 510(k) number, so site counts are a floor. An
+  inspection classification describes one visit to one site, not a rating of a company or its products.
+- Medicare add-on payments are a human-reviewed list checked against CMS. The amount is the most Medicare adds per
+  case, not a device price.
 - Medicare figures cover Original Medicare only, at national level. No public data shows what a hospital pays for
   devices, so the supply range is a planning reference, not a price.
 - A parent company's numbers include every company it owns, for all years.

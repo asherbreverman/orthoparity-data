@@ -66,6 +66,52 @@ python orthoparity.py recalls
 
 It reads `pc_portfolio_510k.csv` and `pc_vendor_names.csv` from step 3, so run it after `payments`.
 
+## 4a. Count adverse event reports (MAUDE)
+
+Get a free openFDA API key (open.fda.gov, "API key"). Save it in the project folder in a file named `.env` with
+one line: `OPENFDA_API_KEY=your-key`. Git ignores that file. Then:
+
+```
+python orthoparity.py maude
+```
+
+It reads `pc_devices.csv` from step 2, takes about two hours, and resumes where it stopped. `--export-only` rewrites
+the CSVs from the saved counts without downloading.
+
+## 4c. Manufacturing sites and FDA inspections
+
+Download three files from the FDA Data Dashboard and save them in `../FDA Data Dashboard` (the `[fda_dashboard]
+DIR` setting):
+
+1. https://datadashboard.fda.gov/oii/cd/inspections.htm: **Download Dataset** > **Entire Inspections Dataset**,
+   then **Download Dataset** > **Entire Citations Dataset**.
+2. https://datadashboard.fda.gov/oii/cd/complianceactions.htm: **Download Dataset** > **Entire Dataset**.
+
+Add no filters. Then:
+
+```
+python orthoparity.py supplier
+```
+
+It downloads site registrations from openFDA (same key as MAUDE, about 5 minutes), then keeps the inspections,
+citations and warning letters for those sites (about a minute).
+
+## 4d. Medicare add-on payments
+
+Download two ZIP files and save them, unopened, in `../CMS Add-on Payments` (the `[cms_add_on] DIR` setting):
+
+1. FY 2027 IPPS final rule home page > **FY 2027 MAC Implementation Files** > **MAC Implementation File 8**.
+2. CY 2027 OPPS final rule page (CMS-1850-FC) > **2027 FR OPPS Addenda** (CMS shows an AMA license page first).
+
+Then:
+
+```
+python orthoparity.py addon
+```
+
+It checks `reference/add_on_payments.csv` against both files and stops on any mismatch. For a new rule year, update
+the reference file first (the report lists the CMS technologies it does not cover).
+
 ## 4b. Build the Medicare procedure view
 
 Download the two CMS files (`docs/DATA_SOURCES.md`, section 9) into the folders `config.ini` names, then:

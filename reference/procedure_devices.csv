@@ -1,141 +1,139 @@
 family_id,role,product_code,status,note
-hip_femur_fixation,implant,HSB,draft,
-hip_femur_fixation,implant,KTT,draft,
-hip_femur_fixation,implant,JDO,draft,
-hip_femur_fixation,implant,KTW,draft,
-hip_femur_fixation,implant,KWK,draft,
-hip_femur_fixation,implant,HRS,draft,
-hip_femur_fixation,implant,HWC,draft,
-hip_femur_fixation,implant,JDQ,draft,
-hip_femur_fixation,implant,LXT,draft,
-hip_femur_fixation,implant,JDP,draft,
-hip_femur_fixation,biologic,MQV,draft,
-hip_knee_replacement,implant,JWH,draft,
-hip_knee_replacement,implant,MBH,draft,
-hip_knee_replacement,implant,HSX,draft,
-hip_knee_replacement,implant,HRY,draft,
-hip_knee_replacement,implant,MBV,draft,
-hip_knee_replacement,implant,OIY,draft,
-hip_knee_replacement,implant,KYK,draft,
-hip_knee_replacement,implant,LGE,draft,
-hip_knee_replacement,implant,QPP,draft,
-hip_knee_replacement,implant,NPJ,draft,
-hip_knee_replacement,implant,NJD,draft,
-hip_knee_replacement,implant,KRR,draft,
-hip_knee_replacement,implant,HTG,draft,
-hip_knee_replacement,implant,HSH,draft,
-hip_knee_replacement,implant,LPH,draft,
-hip_knee_replacement,implant,JDI,draft,
-hip_knee_replacement,implant,LZO,draft,
-hip_knee_replacement,implant,MEH,draft,
-hip_knee_replacement,implant,KWA,draft,
-hip_knee_replacement,implant,LWJ,draft,
-hip_knee_replacement,implant,JDL,draft,
-hip_knee_replacement,implant,JDG,draft,
-hip_knee_replacement,implant,OQG,draft,
-hip_knee_replacement,implant,MBL,draft,
-hip_knee_replacement,implant,MAY,draft,
-hip_knee_replacement,implant,OQI,draft,
-hip_knee_replacement,implant,KMC,draft,
-hip_knee_replacement,implant,KXA,draft,
-hip_knee_replacement,cement and accessories,LOD,draft,
-hip_knee_replacement,cement and accessories,MBB,draft,
-hip_knee_replacement,cement and accessories,LZN,draft,
-hip_knee_replacement,cement and accessories,JDK,draft,
-hip_knee_replacement,enabling technology,OLO,draft,
-hip_knee_replacement,enabling technology,OJP,draft,
-hip_knee_replacement,enabling technology,SBF,draft,
-hip_knee_replacement,enabling technology,PBF,draft,
-hip_knee_replacement,enabling technology,ONN,draft,
-hip_knee_replacement,enabling technology,PLW,draft,
-thoracolumbar_fusion,implant,NKB,draft,
-thoracolumbar_fusion,implant,MNH,draft,
-thoracolumbar_fusion,implant,MNI,draft,
-thoracolumbar_fusion,implant,KWP,draft,
-thoracolumbar_fusion,implant,NQP,draft,
-thoracolumbar_fusion,implant,JDN,draft,
-thoracolumbar_fusion,implant,MAX,draft,
-thoracolumbar_fusion,implant,OVD,draft,
-thoracolumbar_fusion,implant,NVR,draft,
-thoracolumbar_fusion,implant,OQB,draft,
-thoracolumbar_fusion,implant,PHM,draft,
-thoracolumbar_fusion,implant,MQP,draft,
-thoracolumbar_fusion,implant,MRW,draft,
-thoracolumbar_fusion,implant,PEK,draft,
-thoracolumbar_fusion,implant,OWI,draft,
-thoracolumbar_fusion,implant,PML,draft,
-thoracolumbar_fusion,implant,OSH,draft,
-thoracolumbar_fusion,implant,QZY,draft,
-thoracolumbar_fusion,implant,KWQ,draft,
-thoracolumbar_fusion,biologic,MQV,draft,
-thoracolumbar_fusion,biologic,MBP,draft,
-thoracolumbar_fusion,enabling technology,OLO,draft,
-thoracolumbar_fusion,enabling technology,OJP,draft,
-thoracolumbar_fusion,enabling technology,SBF,draft,
-thoracolumbar_fusion,enabling technology,PQC,draft,
-thoracolumbar_fusion,enabling technology,SIN,draft,
-hip_fracture_replacement,implant,KWL,draft,
-hip_fracture_replacement,implant,KWY,draft,
-hip_fracture_replacement,implant,LZY,draft,
-hip_fracture_replacement,implant,JDG,draft,
-hip_fracture_replacement,implant,LPH,draft,
-hip_fracture_replacement,implant,JDI,draft,
-hip_fracture_replacement,implant,LZO,draft,
-hip_fracture_replacement,implant,MEH,draft,
-hip_fracture_replacement,implant,KWA,draft,
-hip_fracture_replacement,implant,LWJ,draft,
-hip_fracture_replacement,cement and accessories,LOD,draft,
-hip_fracture_replacement,cement and accessories,LZN,draft,
-hip_fracture_replacement,cement and accessories,JDK,draft,
-revision_hip_knee,implant,KRO,draft,
-revision_hip_knee,implant,KWZ,draft,
-revision_hip_knee,implant,PBI,draft,
-revision_hip_knee,implant,JDJ,draft,
-revision_hip_knee,implant,QZZ,draft,
-revision_hip_knee,implant,JWH,draft,
-revision_hip_knee,implant,LPH,draft,
-revision_hip_knee,implant,JDI,draft,
-revision_hip_knee,implant,JDQ,draft,
-revision_hip_knee,cement and accessories,MBB,draft,
-revision_hip_knee,cement and accessories,LOD,draft,
-revision_hip_knee,cement and accessories,LZV,draft,
-cervical_fusion,implant,ODP,draft,
-cervical_fusion,implant,OVE,draft,
-cervical_fusion,implant,KWQ,draft,
-cervical_fusion,implant,NKG,draft,
-cervical_fusion,implant,PLR,draft,
-cervical_fusion,biologic,MQV,draft,
-cervical_fusion,biologic,MBP,draft,
-cervical_fusion,enabling technology,OLO,draft,
-cervical_fusion,enabling technology,OJP,draft,
-cervical_fusion,enabling technology,QSD,draft,
-lower_extremity_humerus,implant,HRS,draft,
-lower_extremity_humerus,implant,HWC,draft,
-lower_extremity_humerus,implant,HSB,draft,
-lower_extremity_humerus,implant,JDR,draft,
-lower_extremity_humerus,implant,HTY,draft,
-lower_extremity_humerus,implant,JEC,draft,
-lower_extremity_humerus,implant,NDK,draft,
-lower_extremity_humerus,implant,JDW,draft,
-lower_extremity_humerus,implant,HTN,draft,
-lower_extremity_humerus,implant,JDQ,draft,
-lower_extremity_humerus,biologic,MQV,draft,
-shoulder_elbow_replacement,implant,PHX,draft,
-shoulder_elbow_replacement,implant,KWS,draft,
-shoulder_elbow_replacement,implant,KWT,draft,
-shoulder_elbow_replacement,implant,MBF,draft,
-shoulder_elbow_replacement,implant,PKC,draft,
-shoulder_elbow_replacement,implant,SJW,draft,
-shoulder_elbow_replacement,implant,HSD,draft,
-shoulder_elbow_replacement,implant,QKW,draft,
-shoulder_elbow_replacement,implant,MJT,draft,
-shoulder_elbow_replacement,implant,PAO,draft,
-shoulder_elbow_replacement,implant,QHQ,draft,
-shoulder_elbow_replacement,implant,JDC,draft,
-shoulder_elbow_replacement,implant,JDB,draft,
-shoulder_elbow_replacement,implant,KWI,draft,
-shoulder_elbow_replacement,cement and accessories,LOD,draft,
-shoulder_elbow_replacement,enabling technology,PBF,draft,
+hip_femur_fixation,implant,HSB,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,KTT,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,JDO,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,KTW,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,KWK,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,HRS,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,HWC,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,JDQ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,LXT,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,implant,JDP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_femur_fixation,biologic,MQV,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,JWH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,MBH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,HSX,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,HRY,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,MBV,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,OIY,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,KYK,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,LGE,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,QPP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,NPJ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,NJD,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,KRR,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,HTG,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,HSH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,LPH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,JDI,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,LZO,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,MEH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,KWA,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,LWJ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,JDL,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,JDG,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,OQG,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,MBL,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,MAY,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,OQI,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,KMC,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,implant,KXA,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,cement and accessories,LOD,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,cement and accessories,MBB,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,cement and accessories,LZN,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,cement and accessories,JDK,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,enabling technology,OLO,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,enabling technology,OJP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,enabling technology,SBF,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,enabling technology,PBF,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,enabling technology,ONN,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_knee_replacement,enabling technology,PLW,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,NKB,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,MNH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,MNI,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,KWP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,NQP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,JDN,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,MAX,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,OVD,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,NVR,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,OQB,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,PHM,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,MQP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,MRW,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,PEK,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,OWI,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,PML,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,OSH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,QZY,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,implant,KWQ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,biologic,MQV,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,biologic,MBP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,enabling technology,OLO,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,enabling technology,SBF,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,enabling technology,PQC,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+thoracolumbar_fusion,enabling technology,SIN,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,KWL,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,KWY,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,LZY,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,JDG,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,LPH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,JDI,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,LZO,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,MEH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,KWA,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,implant,LWJ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,cement and accessories,LOD,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,cement and accessories,LZN,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+hip_fracture_replacement,cement and accessories,JDK,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,KRO,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,KWZ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,PBI,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,JDJ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,QZZ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,JWH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,LPH,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,JDI,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,implant,JDQ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,cement and accessories,MBB,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,cement and accessories,LOD,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+revision_hip_knee,cement and accessories,LZV,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,implant,ODP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,implant,OVE,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,implant,KWQ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,implant,NKG,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,implant,PLR,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,implant,PHQ,reviewed,added 2026-11-20: anterior cervical staple cleared as supplemental fixation for fusion; approved in Draft_Review_EASY
+cervical_fusion,biologic,MQV,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,biologic,MBP,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,enabling technology,OLO,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+cervical_fusion,enabling technology,QSD,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,HRS,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,HWC,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,HSB,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,JDR,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,HTY,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,JEC,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,NDK,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,JDW,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,HTN,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,implant,JDQ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+lower_extremity_humerus,biologic,MQV,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,PHX,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,KWS,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,KWT,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,MBF,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,PKC,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,SJW,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,HSD,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,QKW,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,MJT,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,PAO,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,QHQ,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,JDC,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,implant,JDB,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,cement and accessories,LOD,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
+shoulder_elbow_replacement,enabling technology,PBF,reviewed,checked 2026-11-20 against FDA product code definitions and the CMS MS-DRG v41.1 and v44 manuals; approved in Draft_Review_EASY
 spine_surgery_no_fusion,implant,NQW,reviewed,checked 2026-11-19 against public manufacturer coding guides and the CMS MS-DRG v41.1 manual; sources in reviews/Procedure_Families_Added_REVIEW.xlsx
 knee_surgery_no_replacement,implant,MBI,reviewed,checked 2026-11-19 against public manufacturer coding guides and the CMS MS-DRG v41.1 manual; sources in reviews/Procedure_Families_Added_REVIEW.xlsx
 knee_surgery_no_replacement,implant,MAI,reviewed,checked 2026-11-19 against public manufacturer coding guides and the CMS MS-DRG v41.1 manual; sources in reviews/Procedure_Families_Added_REVIEW.xlsx
