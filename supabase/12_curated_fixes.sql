@@ -119,6 +119,68 @@ update pc_vendors set rolls_up_to = 'n_zavationmedicalproducts' where vendor_id 
 -- "Mircoport Orthopedics" is a misspelled applicant name: K182251 (EVOLUTION knee) filed from MicroPort's Arlington, TN address
 update pc_vendors set rolls_up_to = 'n_microportorthopedics' where vendor_id = 'n_mircoportorthopedics';
 
+-- SBM (Science & Bio Materials), Lourdes, France: five spellings of one company. Every one of its 21 FDA 510(k)s
+-- since 2003 lists Zi Du Monge, 65100 Lourdes (openFDA 510(k) records)
+update pc_vendors set rolls_up_to = 'n_scienceforbiomaterials'
+ where vendor_id in ('n_sbmsciencesforbiomaterials', 'n_sciencebiomaterials', 'n_sciencesetbiomateriauxsbm', 'n_sciencesforbiomaterials');
+select pg_temp.op_rename('n_scienceforbiomaterials', 'SBM (Science & Bio Materials)', 'bio ?materials');
+
+-- Phase 3: spelling variants of one company, each confirmed by the same street address on FDA's 510(k) records (openFDA).
+-- Each variant rolls up to the spelling with more clearances (or to that company's parent).
+-- clear this file's own lineage rows so a rerun re-inserts them once
+delete from pc_vendor_lineage where note like 'Phase 2:%' or note like 'Phase 3:%';
+-- (a VALUES list in each statement: the Supabase editor commits statement by statement, so a temp table would vanish)
+with o(child, keeper, evidence) as (values
+ ('n_avancedorthopaedicsolutionsaos', 'n_advancedorthopaedicsolutions', '3203 Kashiwa St., Torrance, CA'),
+ ('n_bluestonesynergy', 'n_blustonesynergy', '5520 Ventana Ct., Pueblo, CO'),
+ ('n_boltorthopaedics', 'n_boltorthopedics', 'Unit 5 Northwood Ct., Santry, Dublin'),
+ ('n_desuttermedical', 'n_desouttermedical', 'Unit 1 Kings Park, Kings Langley'),
+ ('n_exremitymedical', 'n_extremitymedical', '300 Interpace Pkwy., Parsippany, NJ'),
+ ('n_iconorthopaedicconceptsedgeorthopaedics', 'n_iconorthopedicconceptsedgeorthopaedic', '6 Mars Ct., Unit 6-3, Boonton, NJ'),
+ ('n_illminossmedical', 'n_illuminossmedical', '993 Waterman Ave., East Providence, RI'),
+ ('n_lespineinnovations', 'n_lesspineinnovations', '350 Main St., Malden, MA'),
+ ('n_medicaldesign', 'n_medicaldesigns', '6709 S. Minnesota Ave., Suite 204, Sioux Falls, SD'),
+ ('n_meridianmedical', 'n_meridanmedical', '3722 Ave. Sausalito, Irvine, CA'),
+ ('n_nextsteparthopedix', 'n_nextsteparthropedix', '1800 Triplett Blvd., Akron, OH'),
+ ('n_omnllifescience', 'n_omnilifescience', '480 Paramount Dr., Raynham, MA'),
+ ('n_orthodiscoverycrossroadsextrem', 'n_orthodiscoverycrossroadsextremitysystems', '458 Distribution Pkwy., Collierville, TN'),
+ ('n_pontisorthopaeeics', 'n_pontisorthopaedics', 'Post St., Suite 103, San Francisco, CA (street number typed 2229 and 2299)'),
+ ('n_precisioncastingsolution', 'n_precisioncastingsolutions', 'Henrici Rd., Oregon City, OR (street number typed 20031 and 200031)'),
+ ('n_prismsurgicaldesign', 'n_prismsurgicaldesigns', '15/43 Lang Parade, Milton, Australia'),
+ ('n_rivarpmedicalpvt', 'n_rivarpmedicalprivate', '34 Azeez Sait Industrial Town, Bangalore'),
+ ('n_spinalanalyticsgeometricalimpant', 'n_spinalanalyticsgeometricalimplant', '2189 W. Busch Blvd., Tampa, FL'),
+ ('n_technologiadisenoindustrialde', 'n_tecnologiadisenoindustrialde', 'P.O. Box 506, South Lyon, MI'),
+ ('n_smithnewphew', 'smith_nephew', '1450 Brooks Rd., Memphis, TN'))
+update pc_vendors c set rolls_up_to = coalesce(nullif(k.rolls_up_to, ''), k.vendor_id)
+  from o join pc_vendors k on k.vendor_id = o.keeper
+ where c.vendor_id = o.child;
+insert into pc_vendor_lineage (vendor_id, parent, relation, valid_from, valid_to, source_url, note, reviewed)
+select o.child, o.keeper, 'same company as', null, null,
+       'https://api.fda.gov/device/510k.json?search=k_number:' || (select string_agg(p.knumber, '+OR+k_number:') from pc_portfolio_510k p where p.vendor_id in (o.child, o.keeper)),
+       'Phase 3: spelling variant; same address on FDA 510(k) records: ' || o.evidence, true
+  from (values
+ ('n_avancedorthopaedicsolutionsaos', 'n_advancedorthopaedicsolutions', '3203 Kashiwa St., Torrance, CA'),
+ ('n_bluestonesynergy', 'n_blustonesynergy', '5520 Ventana Ct., Pueblo, CO'),
+ ('n_boltorthopaedics', 'n_boltorthopedics', 'Unit 5 Northwood Ct., Santry, Dublin'),
+ ('n_desuttermedical', 'n_desouttermedical', 'Unit 1 Kings Park, Kings Langley'),
+ ('n_exremitymedical', 'n_extremitymedical', '300 Interpace Pkwy., Parsippany, NJ'),
+ ('n_iconorthopaedicconceptsedgeorthopaedics', 'n_iconorthopedicconceptsedgeorthopaedic', '6 Mars Ct., Unit 6-3, Boonton, NJ'),
+ ('n_illminossmedical', 'n_illuminossmedical', '993 Waterman Ave., East Providence, RI'),
+ ('n_lespineinnovations', 'n_lesspineinnovations', '350 Main St., Malden, MA'),
+ ('n_medicaldesign', 'n_medicaldesigns', '6709 S. Minnesota Ave., Suite 204, Sioux Falls, SD'),
+ ('n_meridianmedical', 'n_meridanmedical', '3722 Ave. Sausalito, Irvine, CA'),
+ ('n_nextsteparthopedix', 'n_nextsteparthropedix', '1800 Triplett Blvd., Akron, OH'),
+ ('n_omnllifescience', 'n_omnilifescience', '480 Paramount Dr., Raynham, MA'),
+ ('n_orthodiscoverycrossroadsextrem', 'n_orthodiscoverycrossroadsextremitysystems', '458 Distribution Pkwy., Collierville, TN'),
+ ('n_pontisorthopaeeics', 'n_pontisorthopaedics', 'Post St., Suite 103, San Francisco, CA (street number typed 2229 and 2299)'),
+ ('n_precisioncastingsolution', 'n_precisioncastingsolutions', 'Henrici Rd., Oregon City, OR (street number typed 20031 and 200031)'),
+ ('n_prismsurgicaldesign', 'n_prismsurgicaldesigns', '15/43 Lang Parade, Milton, Australia'),
+ ('n_rivarpmedicalpvt', 'n_rivarpmedicalprivate', '34 Azeez Sait Industrial Town, Bangalore'),
+ ('n_spinalanalyticsgeometricalimpant', 'n_spinalanalyticsgeometricalimplant', '2189 W. Busch Blvd., Tampa, FL'),
+ ('n_technologiadisenoindustrialde', 'n_tecnologiadisenoindustrialde', 'P.O. Box 506, South Lyon, MI'),
+ ('n_smithnewphew', 'smith_nephew', '1450 Brooks Rd., Memphis, TN')) as o(child, keeper, evidence)
+ where exists (select 1 from pc_vendors v where v.vendor_id = o.child);
+
 -- Brainlab AG converted to Brainlab SE on 2025-06-24 (same company)
 update pc_vendors set rolls_up_to = 'n_brainlab' where vendor_id = 'n_brainlabse';
 select pg_temp.op_rename('n_brainlab', 'Brainlab', '^brainlab');
@@ -133,7 +195,6 @@ update pc_vendors set rolls_up_to = 'n_biomed' where vendor_id = 'n_lkspine';
 -- ---------------------------------------------------------------------------------------------
 -- C. Ownership changes and divestitures
 -- ---------------------------------------------------------------------------------------------
-delete from pc_vendor_lineage where note like 'Phase 2:%';
 insert into pc_vendor_lineage (vendor_id, parent, relation, valid_from, valid_to, source_url, note, reviewed) values
  ('n_brainlabse', 'n_brainlab', 'renamed from', '2025-06-24', null,
   'https://www.brainlab.com/press-releases-landingpage/brainlab-se-conversion-into-european-stock-corporation-completed/',
@@ -142,6 +203,14 @@ insert into pc_vendor_lineage (vendor_id, parent, relation, valid_from, valid_to
   'Phase 2: same address and contact on FDA 510(k) records', true),
  ('n_glwmedicalinnovation', 'n_glw', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:GLW',
   'Phase 2: same address on FDA 510(k) records', true),
+ ('n_sbmsciencesforbiomaterials', 'n_scienceforbiomaterials', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:(sbm+OR+%22bio+materials%22)+AND+country_code:FR',
+  'Phase 3: same company; every SBM 510(k) lists Zi Du Monge, Lourdes', true),
+ ('n_sciencebiomaterials', 'n_scienceforbiomaterials', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:(sbm+OR+%22bio+materials%22)+AND+country_code:FR',
+  'Phase 3: same company; every SBM 510(k) lists Zi Du Monge, Lourdes', true),
+ ('n_sciencesetbiomateriauxsbm', 'n_scienceforbiomaterials', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:(sbm+OR+%22bio+materials%22)+AND+country_code:FR',
+  'Phase 3: same company; every SBM 510(k) lists Zi Du Monge, Lourdes', true),
+ ('n_sciencesforbiomaterials', 'n_scienceforbiomaterials', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:(sbm+OR+%22bio+materials%22)+AND+country_code:FR',
+  'Phase 3: same company; every SBM 510(k) lists Zi Du Monge, Lourdes', true),
  ('n_zavation', 'n_zavationmedicalproducts', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:zavation',
   'Phase 2: both applicant names filed from 220 Lakeland Pkwy., Flowood, MS', true),
  ('n_mircoportorthopedics', 'n_microportorthopedics', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:mircoport',
@@ -286,6 +355,29 @@ select m.family_id, m.role, c.product_code, c.plain_name, c.fda_name,
                ('hip_knee_replacement', 'instrument', 'OYK')) m(family_id, role, code)
   join pc_product_codes c on c.product_code = m.code
  where not exists (select 1 from pc_procedure_devices x where x.family_id = m.family_id and x.product_code = m.code);
+
+-- ---------------------------------------------------------------------------------------------
+-- F2. Phase 3: company names title-cased from FDA's ALL CAPS lost their acronyms ("Tdm Co., Ltd.", "Gbs Commonwealth",
+--     "Kfx Medical"). A 2-4 letter word with no vowel is an acronym, except a few abbreviations. Same rule as pc_acr in 05.
+-- ---------------------------------------------------------------------------------------------
+create or replace function pg_temp.op_acr(t text) returns text language plpgsql immutable as $$
+declare r text := t; w text;
+begin
+  if r is null then return r; end if;
+  for w in select distinct x[1] from regexp_matches(r, '\m([B-DF-HJ-NP-TV-Z][b-df-hj-np-tv-z]{1,3})\M', 'g') x loop
+    if w not in ('Mr', 'Mrs', 'Dr', 'St', 'Ltd', 'Mfg', 'Pty', 'Gmbh', 'Bhd', 'Sdn', 'Pvt', 'Std', 'Srl', 'Sl', 'Ms', 'Jr', 'Sr', 'Nd', 'Rd', 'Th', 'Hwy', 'Mt', 'Ft', 'Kg', 'Bv', 'Llc', 'Plc', 'Ltda', 'Sprl', 'Bvba') then
+      r := regexp_replace(r, '\m' || w || '\M', upper(w), 'g');
+    end if;
+  end loop;
+  return r;
+end $$;
+update pc_vendors set display_name = pg_temp.op_acr(display_name)
+ where basis <> 'curated family' and display_name is distinct from pg_temp.op_acr(display_name);
+
+-- the procedures page: CMS's DRGs 469 and 470 also cover total ankle replacement, and ankle codes now map there
+update pc_procedures
+   set description = 'Elective total or partial hip or knee replacement, plus total ankle replacement, which CMS groups into the same DRGs. Medicare pays hip, knee and ankle under the same DRGs, so the data can''t separate them.'
+ where family_id = 'hip_knee_replacement' and description not like '%ankle%';
 
 -- ---------------------------------------------------------------------------------------------
 -- G. Recount totals for every vendor touched above

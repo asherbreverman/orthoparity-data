@@ -96,12 +96,22 @@ returns jsonb language sql stable as $$
 $$;
 
 -- product pages: who filed the 510(k) and which parent company owns that product line now
-create or replace function pc_device_owner(k text) returns jsonb language sql stable as $$
+create or replace function pc_device_owner(k text) returns jsonb language plpgsql stable as $$
+begin
+  -- Phase 3: plpgsql so it can call pc_co (05) for a clean filer name; the raw FDA name stays in filer_raw
+  return (
   with d as (select p.knumber, p.applicant, p.vendor_id from pc_portfolio_510k p
              where p.knumber = upper(regexp_replace(coalesce(k, ''), '[\s\-]', '', 'g')) limit 1),
   f as (select d.*, pc_applicant_vendor(d.applicant) as filer_vendor, pc_vendor_parent(d.vendor_id) as owner from d)
   select case when f.knumber is null then jsonb_build_object('found', false) else jsonb_build_object(
-    'found', true, 'knumber', f.knumber, 'filer', f.applicant, 'filer_vendor_id', f.filer_vendor,
+    'found', true, 'knumber', f.knumber,
+    -- clean filer name; when it names the same company as today's owner (only the legal suffix or casing differs),
+    -- use the owner's exact name so the page never prints "X, now part of X"
+    'filer', case when regexp_replace(lower(pc_co(f.applicant)), '[^a-z0-9]', '', 'g')
+                       = regexp_replace(lower(pc_co((select display_name from pc_vendors where vendor_id = f.owner))), '[^a-z0-9]', '', 'g')
+                  then (select display_name from pc_vendors where vendor_id = f.owner)
+                  else coalesce(pc_co(f.applicant), f.applicant) end,
+    'filer_raw', f.applicant, 'filer_vendor_id', f.filer_vendor,
     'owner_vendor_id', f.owner, 'owner_name', (select display_name from pc_vendors where vendor_id = f.owner),
     'now_part_of', coalesce(f.filer_vendor, f.vendor_id) is distinct from f.owner,
     'divested', f.vendor_id is distinct from coalesce(f.filer_vendor, f.vendor_id),
@@ -112,8 +122,8 @@ create or replace function pc_device_owner(k text) returns jsonb language sql st
                         when coalesce(f.filer_vendor, f.vendor_id) is distinct from f.owner
                           then (pc_vendor_resolve(coalesce(f.filer_vendor, f.vendor_id))->>'event') end,
     'source_url', (select dv.source_url from pc_vendor_divestitures dv where dv.buyer = f.vendor_id and dv.seller = f.filer_vendor limit 1))
-  end from (select 1) one left join f on true
-$$;
+  end from (select 1) one left join f on true);
+end $$;
 
 create or replace function pc_vendor_portfolio(v text, m text default 'pit', p_anatomy text default null,
                                                p_kind text default null, p_code text default null, lim int default 500)
@@ -368,7 +378,7 @@ begin
   select coalesce(jsonb_agg(s order by s.amount desc), '[]'::jsonb) into studies from (
     select study_name, max(ct_gov_id) as ct_gov_id, sum(amount) as amount, min(year) as first_year, max(year) as last_year
     from pc_op_research where ('|' || coalesce(knumbers, '') || '|') like '%|' || kn || '|%' and coalesce(ortho, true) group by study_name
-    order by sum(amount) desc limit 10) s;
+    order by sum(amount) desc limit 200) s;
   select product_code into code from pc_devices where knumber = kn;
   if code is not null then
     with codek as (select knumber from pc_devices where product_code = code),

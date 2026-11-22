@@ -355,6 +355,13 @@ begin
   if dev.knumber is null then
     return jsonb_build_object('found', false, 'knumber', kn);
   end if;
+  -- Phase 3: a non-orthopedic device is on file only because an orthopedic 510(k) cites it as a predicate.
+  -- It gets no orthopedic brief (owner, alternatives and Medicare would be wrong); the page says it isn't in the database.
+  if not coalesce(dev.in_starting_set, false) then
+    return jsonb_build_object('found', false, 'knumber', kn, 'reason', 'outside orthopedic scope (on file only as a predicate)',
+                              'device_name', dev.device_name, 'applicant', dev.applicant, 'decision_date', dev.decision_date,
+                              'product_code', dev.product_code);
+  end if;
   select * into pcode from pc_product_codes where product_code = dev.product_code;
   select * into ifu from pc_ifu where knumber = kn;
 
@@ -468,7 +475,14 @@ begin
 
   return jsonb_build_object(
     'found', true,
-    'device', to_jsonb(dev),
+    -- clean applicant name for the page header. When it names the same company as today's owner (only the legal suffix
+    -- or casing differs), use the owner's exact name so the page doesn't print "X, now part of X"
+    'device', to_jsonb(dev) || jsonb_build_object('applicant',
+                 coalesce((select case when regexp_replace(lower(pc_co(dev.applicant)), '[^a-z0-9]', '', 'g')
+                                            = regexp_replace(lower(pc_co(o->>'owner_name')), '[^a-z0-9]', '', 'g')
+                                       then o->>'owner_name' end from (select pc_device_owner(kn) as o) x),
+                          pc_co(dev.applicant), dev.applicant),
+                 'applicant_raw', dev.applicant),
     'product_code', to_jsonb(pcode),
     'ifu', to_jsonb(ifu),
     'pattern', pattern,

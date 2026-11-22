@@ -38,6 +38,19 @@ REVIEW_FILE = "Vendor_Registry_REVIEW.xlsx"
 EVIDENCE_SHARE, PAYER_MIN_TAGS, LABELER_MIN_DEVICES = 0.6, 50, 5
 
 
+# Phase 3: names title-cased from FDA's ALL CAPS lose their acronyms ("Tdm", "Gbs Commonwealth", "Kfx Medical").
+# A 2-4 letter word with no vowel is an acronym, except a few abbreviations. Same rule as pc_acr in supabase/05.
+_ACR_SKIP = {"Mr", "Mrs", "Dr", "St", "Ltd", "Mfg", "Pty", "Gmbh", "Bhd", "Sdn", "Pvt", "Std", "Srl", "Sl", "Ms", "Jr", "Sr",
+             "Nd", "Rd", "Th", "Hwy", "Mt", "Ft", "Kg", "Bv", "Llc", "Plc", "Ltda", "Sprl", "Bvba"}
+
+
+def fix_acronyms(name: str | None) -> str | None:
+    if not name:
+        return name
+    return re.sub(r"\b([B-DF-HJ-NP-TV-Z][b-df-hj-np-tv-z]{1,3})\b",
+                  lambda m: m.group(1) if m.group(1) in _ACR_SKIP else m.group(1).upper(), name)
+
+
 def squash(name: str | None) -> str:
     return re.sub(r"[^a-z0-9]", "", (name or "").lower().replace("&", "").replace("+", ""))
 
@@ -262,6 +275,8 @@ def build(con, cfg, answers: dict, fams, lineage) -> dict:
             v["display_name"] = max(an, key=lambda a: applicants[a])
         elif ln:
             v["display_name"] = ln[0]
+        if v.get("basis") != "curated family":
+            v["display_name"] = fix_acronyms(v["display_name"])
 
     # reviewer renames / parents
     for vid, ans in answers["vendors"].items():

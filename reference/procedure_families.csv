@@ -1,6 +1,6 @@
 family_id,sort_order,name,description,drgs,flagship,supply_range,status,note
 hip_femur_fixation,1,Hip and femur fracture fixation,"Surgery to fix a broken hip or thigh bone with a nail, plate or screws (keeps the patient's own hip joint).",480|481|482,yes,yes,approved 2026-11-19,
-hip_knee_replacement,2,Primary hip and knee replacement,"Elective total or partial hip or knee replacement. Medicare pays hip and knee under the same DRGs, so the data can't separate them.",461|462|469|470,yes,yes,approved 2026-11-19,
+hip_knee_replacement,2,Primary hip and knee replacement,"Elective total or partial hip or knee replacement, plus total ankle replacement, which CMS groups into the same DRGs. Medicare pays hip, knee and ankle under the same DRGs, so the data can't separate them.",461|462|469|470,yes,yes,approved 2026-11-19,
 thoracolumbar_fusion,3,Lumbar and thoracolumbar spinal fusion,"Fusion of the lower or mid spine with screws, rods and cages, including combined front-and-back fusions and deformity cases.",453|454|455|456|457|458|459|460,yes,yes,approved 2026-11-19,
 hip_fracture_replacement,4,Hip replacement for hip fracture,Replacing part or all of the hip joint after a hip fracture (hemiarthroplasty or total hip).,521|522,no,yes,approved 2026-11-19,
 revision_hip_knee,5,Revision hip and knee replacement,"Redoing a hip or knee replacement: removing and replacing worn, loose or infected components.",466|467|468,no,yes,approved 2026-11-19,
