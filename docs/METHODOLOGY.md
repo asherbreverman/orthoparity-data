@@ -364,7 +364,7 @@ implant cost as a share of payment (`reference/supply_cost_evidence.csv`). It is
 covers (`supply_range = yes`). The other families read NOT FOUND with the reason.
 
 **Device categories.** `reference/procedure_devices.csv` links FDA product codes to each family, with a role
-(implant, biologic, cement and accessories, enabling technology). Links are drafted from the DRG definition and the
+(implant, biologic, cement and accessories, enabling technology, instrument). Links are drafted from the DRG definition and the
 product code's anatomy and stay marked draft until reviewed. For the 7 families added in November 2026, each link
 was checked against public manufacturer coding guides and the CMS MS-DRG v41.1 Definitions Manual. Links with a clear
 source are marked reviewed; links without one were removed. That check confirms a device type's procedures group to

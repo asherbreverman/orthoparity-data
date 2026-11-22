@@ -47,7 +47,7 @@ from predicate_chain.config import load_config
 IP_COLS = ["Rndrng_Prvdr_CCN", "DRG_Cd", "DRG_Desc", "Tot_Dschrgs", "Avg_Tot_Pymt_Amt", "Avg_Mdcr_Pymt_Amt"]
 OP_COLS = ["Rndrng_Prvdr_CCN", "APC_Cd", "APC_Desc", "Bene_Cnt", "CAPC_Srvcs", "Avg_Mdcr_Alowd_Amt",
            "Avg_Mdcr_Pymt_Amt"]
-ROLES = ("implant", "biologic", "cement and accessories", "enabling technology")
+ROLES = ("implant", "biologic", "cement and accessories", "enabling technology", "instrument")
 
 
 class MedicareError(Exception):
