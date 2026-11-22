@@ -60,7 +60,10 @@ $$;
 
 -- a device name cut at its first comma or semicolon ("OPTETRAK TOTAL KNEE SYSTEM, HI-FLEX ..." -> "OPTETRAK TOTAL KNEE SYSTEM")
 create or replace function pc_short_name(n text) returns text language sql immutable as $$
-  select nullif(trim(split_part(split_part(coalesce(n, ''), ';', 1), ',', 1)), '')
+  -- first part of a device name, cut at the first comma or semicolon outside parentheses
+  -- ("GENTAFIX® (1, 3, 3MV)" stays whole instead of becoming "GENTAFIX® (1")
+  select nullif(case when x.a ~ '\([^)]*$' then coalesce(trim(substring(x.f from '^[^(]*\([^)]*\)[^,]*')), x.a) else x.a end, '')
+    from (select f, trim(split_part(f, ',', 1)) as a from (select split_part(coalesce(n, ''), ';', 1) as f) s) x
 $$;
 
 -- a count with its noun (1 death, 2 deaths)
@@ -110,6 +113,14 @@ $$;
 
 -- title case for names FDA files in ALL CAPS, keeping acronyms and model codes
 -- ("EAUM TOTAL KNEE SYSTEM" -> "EAUM Total Knee System"; "PROXIMAL FEMORAL NAIL (PFN) SYSTEM" -> "Proximal Femoral Nail (PFN) System")
+-- initcap without the server locale: Supabase's initcap treats "i.t.s." as one word and returns "I.t.s.",
+-- while a C-locale server returns "I.T.S.". Capitalize each run of letters and digits ourselves.
+create or replace function pc_initcap(t text) returns text language sql immutable as $$
+  select coalesce(string_agg(case when x.m ~ '^[[:alnum:]]' then upper(left(x.m, 1)) || lower(substr(x.m, 2)) else x.m end, '' order by r.n), t)
+    from regexp_matches(t, '([[:alnum:]]+|[^[:alnum:]]+)', 'g') with ordinality as r(a, n),
+         lateral (select r.a[1] as m) x
+$$;
+
 create or replace function pc_tc(s text) returns text language plpgsql immutable as $$
 declare
   w text; part text; res text; tok text; out text := ''; i int := 0; letters int; lowers int;
@@ -140,7 +151,7 @@ begin
                and w ~ '[-/]') then
           res := res || part;
         else
-          res := res || regexp_replace(initcap(lower(part)), '''S\M', '''s', 'g');
+          res := res || regexp_replace(pc_initcap(part), '''S\M', '''s', 'g');
         end if;
       end loop;
     end if;
@@ -155,7 +166,7 @@ create or replace function pc_fix_text(t text) returns text language plpgsql imm
 declare
   r text := t; m text; i int;
   mon text[] := array['January','February','March','April','May','June','July','August','September','October','November','December'];
-  suf text := '(Inc|INC|Incorporated|INCORPORATED|LLC|L\.L\.C|Ltd|LTD|Limited|LIMITED|Private Limited|Pvt\. Ltd|GmbH & Co\. KG|GmbH|GMBH|Corp|CORP|Corporation|CORPORATION|S\.A\.S|S\.A\. de C\.V|S\.A|S\.R\.L|S\.p\.A|B\.V|N\.V|NV|AG|SAS|SA|Pty Ltd|Co\., Ltd|Co\.,Ltd|Co\. Ltd|Co Ltd|CO\., LTD|L\.P|LP|ULC|UC|PLC|plc|SE|Co|CO|Pty|\(Pty\))';
+  suf text := '(Inc|INC|Incorporated|INCORPORATED|LLC|L\.L\.C|Ltd|LTD|Limited|LIMITED|Private Limited|Pvt\. Ltd|GmbH & Co\. KG|GmbH|GMBH|Gmbh|Corp|CORP|Corporation|CORPORATION|S\.A\.S|S\.A\. de C\.V|S\.A|S\.R\.L|S\.p\.A|B\.V|N\.V|NV|AG|SAS|SA|Pty Ltd|Co\., Ltd|Co\.,Ltd|Co\. Ltd|Co Ltd|CO\., LTD|L\.P|LP|ULC|UC|PLC|plc|SE|Co|CO|Pty|\(Pty\))';
   stopw text[] := array['FDA','MAUDE','GUDID','NTAP','HCPCS','OAI','NAI','VAI','MS-DRG','MS-DRGS','ICD-10-PCS','UDI-DI','FEI','CMS','ASC','CY','FY','NOT','FOUND','NCT'];
   ok boolean;
 begin
@@ -433,20 +444,20 @@ begin
          coalesce(jsonb_agg(jsonb_build_object('vendor_id', g.grp, 'company', pc_fix_text(pc_co(v.display_name)), 'clearances', g.clearances,
                                                'latest_knumber', g.latest_knumber, 'latest_device', g.latest_device,
                                                'latest_date', g.latest_date)
-                            order by g.clearances desc, g.latest_date desc), '[]'::jsonb),
-         (array_to_string((array_agg(pc_co(v.display_name) order by g.clearances desc, g.latest_date desc))[1:3], ', '))
+                            order by g.clearances desc, g.latest_date desc, v.display_name), '[]'::jsonb),
+         (array_to_string((array_agg(pc_co(v.display_name) order by g.clearances desc, g.latest_date desc, v.display_name))[1:3], ', '))
     into n_alt, alts, alt_names
     from g join pc_vendors v on v.vendor_id = g.grp;
   -- closest equivalents: other companies' devices that share this device's predicates, most shared first
   -- grouped by current owner, so a sister company or the new owner never counts as an equivalent
-  select string_agg(co, ', ' order by ns desc, nd desc, latest desc) into peer_names from (
+  select string_agg(co, ', ' order by ns desc, nd desc, latest desc, co) into peer_names from (
     select pc_co(v.display_name) as co, max((x->>'n_shared')::int) as ns, count(*) as nd, max(x->>'decision_year') as latest
       from jsonb_array_elements(coalesce(b->'peers'->'peers', '[]'::jsonb)) x
       join pc_portfolio_510k pp on pp.knumber = x->>'knumber'
       join pc_vendors pv on pv.vendor_id = pp.vendor_id
       join pc_vendors v on v.vendor_id = coalesce(nullif(pv.rolls_up_to, ''), pv.vendor_id)
      where v.vendor_id is distinct from owner
-     group by 1 order by 2 desc, 3 desc, 4 desc limit 3) z;
+     group by 1 order by 2 desc, 3 desc, 4 desc, 1 limit 3) z;
   crowd := case when n_alt >= 20 then 'Crowded' when n_alt >= 5 then 'Competitive' when n_alt >= 1 then 'Few alternatives'
                 else 'No recent alternatives' end;
   c_alt := pc_card('alternatives', 'What else does the job?', crowd, case when n_alt < 5 then 'attention' else 'info' end,
@@ -764,7 +775,7 @@ begin
            else 'Which site makes this product, and what is your backup if that site stops shipping?' end,
       'supplier');
     c_sup := c_sup || jsonb_build_object('short', 'Supplier record',
-      'headline', case when (sup->>'sites')::int = 0 then 'No sites on file.' else (sup->>'sites') || ' registered sites.' end,
+      'headline', case when (sup->>'sites')::int = 0 then 'No sites on file.' else pc_count((sup->>'sites')::int, 'registered site', 'registered sites') || '.' end,
       'figs', pc_figs(pc_fig(sup->>'sites', 'sites list this 510(k)'), pc_fig(sup->>'making_sites', 'make or sterilize it'),
                       pc_fig(sup->>'inspections_last5', 'device inspections, last five years'), pc_fig(sup->>'oai_last5', 'classified OAI'),
                       pc_fig(sup->>'warning_letters_last5', 'warning letters, last five years')),
@@ -1099,7 +1110,7 @@ begin
     pc_card('payments', 'What are the financial ties for this vendor?',
       case when coalesce(tot, 0) = 0 then 'None in scope' when roy_share > 0.5 then 'Royalty-led' when coalesce(roy_share, 0) < 0.05 then 'No royalties' else 'Mixed' end, 'info',
       case when coalesce(tot, 0) > 0 then
-             pc_money(tot) || ' in reported payments in ' || latest || ' to ' || to_char(recips, 'FM999,999,999') || ' recipients. Royalties are '
+             pc_money(tot) || ' in reported payments in ' || latest || coalesce(' to ' || to_char(recips, 'FM999,999,999') || ' recipients', '') || '. Royalties are '
              || round((100 * coalesce(roy_share, 0))::numeric) || '% of payments since 2019'
              || case when coalesce(cons_r, 0) > 0 then '; ' || cons_r || ' consultants were paid in ' || latest else '' end
              || case when coalesce(max_holders, 0) > 0 then '; up to ' || max_holders || ' physicians a year reported ownership' else '' end || '.'
@@ -1379,5 +1390,5 @@ begin
 end $$;
 
 grant execute on function pc_fig(text, text), pc_num(numeric), pc_figs(jsonb[]), pc_money(double precision), pc_data_end(), pc_card(text, text, text, text, text, text, text, text),
-  pc_signals(text), pc_vendor_signals(text, text), pc_tc(text), pc_fix_text(text), pc_fix_card(jsonb), pc_same_name(text, text),
+  pc_signals(text), pc_vendor_signals(text, text), pc_tc(text), pc_initcap(text), pc_fix_text(text), pc_fix_card(jsonb), pc_same_name(text, text),
   pc_clean_ifu(text), pc_family_score(text, text), pc_family_conflict(text[], text) to anon, authenticated;

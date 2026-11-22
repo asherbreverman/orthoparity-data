@@ -114,6 +114,11 @@ select pg_temp.op_split('integra', 'n_integratedendoscopy',       'Integrated En
 update pc_vendors set rolls_up_to = 'n_glw' where vendor_id in ('n_glwmedical', 'n_glwmedicalinnovation');
 select pg_temp.op_rename('n_glw', 'GLW Medical', '^glw');
 
+-- Zavation, LLC and Zavation Medical Products, LLC both filed 510(k)s from 220 Lakeland Pkwy., Flowood, MS (openFDA)
+update pc_vendors set rolls_up_to = 'n_zavationmedicalproducts' where vendor_id = 'n_zavation';
+-- "Mircoport Orthopedics" is a misspelled applicant name: K182251 (EVOLUTION knee) filed from MicroPort's Arlington, TN address
+update pc_vendors set rolls_up_to = 'n_microportorthopedics' where vendor_id = 'n_mircoportorthopedics';
+
 -- Brainlab AG converted to Brainlab SE on 2025-06-24 (same company)
 update pc_vendors set rolls_up_to = 'n_brainlab' where vendor_id = 'n_brainlabse';
 select pg_temp.op_rename('n_brainlab', 'Brainlab', '^brainlab');
@@ -137,6 +142,10 @@ insert into pc_vendor_lineage (vendor_id, parent, relation, valid_from, valid_to
   'Phase 2: same address and contact on FDA 510(k) records', true),
  ('n_glwmedicalinnovation', 'n_glw', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:GLW',
   'Phase 2: same address on FDA 510(k) records', true),
+ ('n_zavation', 'n_zavationmedicalproducts', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:zavation',
+  'Phase 2: both applicant names filed from 220 Lakeland Pkwy., Flowood, MS', true),
+ ('n_mircoportorthopedics', 'n_microportorthopedics', 'same company as', null, null, 'https://api.fda.gov/device/510k.json?search=applicant:mircoport',
+  'Phase 2: misspelled applicant name on K182251 (EVOLUTION NitrX knee), filed from Arlington, TN', true),
  ('n_suzhoumicroportorthorecon', 'n_microportorthopedics', 'subsidiary of', null, null,
   'https://microport.com/news/microport-orthopedics-first-chinese-made-total-hip-arthroplasty-system-receives-nmpa-approval',
   'Phase 2: MicroPort describes Suzhou MicroPort OrthoRecon as a subsidiary of MicroPort Orthopedics', true),
