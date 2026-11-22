@@ -275,8 +275,7 @@ years in hospital outpatient departments and ASCs.
 CMS names technologies, not 510(k) numbers, so the orthopedic list is human-reviewed. `reference/add_on_payments.csv`
 holds one row per technology and program: the CMS name, status, company, the FDA numbers it maps to with an FDA
 source link, and the starting-set 510(k)s for that product line. Navigation instruments, cement and other accessory
-510(k)s are left out. A PMA device (Infuse, PearlMatrix, TOPS, TOUCH CMC 1) appears on its company page only, since
-the product pages are built from 510(k)s.
+510(k)s are left out. A PMA device (Infuse, PearlMatrix, TOPS, TOUCH CMC 1) links to its approval page (section 16e).
 
 The step then checks every reviewed row against the CMS files: each NTAP name must appear in the matching list
 (new, continued or discontinued) of FY 2027 MAC Implementation File 8, and each pass-through code must carry status
@@ -285,6 +284,63 @@ ICD-10 codes, APC and short descriptor come from the CMS files, not from the ref
 CMS technology and pass-through code the reference file leaves out, so a reviewer can confirm nothing orthopedic
 was missed. A product line that changed owners counts under its current owner, the same as the portfolio (Stryker
 bought 4WEB's Ankle Truss System in 2024).
+
+## 16e. FDA approvals: PMA and HDE (`load-approvals`, `supabase/13_approvals.sql`)
+
+Class III orthopedic devices reach the market through premarket approval (PMA) instead of a 510(k): the company
+submits its own clinical evidence of safety and effectiveness, and there is no predicate. A humanitarian device
+exemption (HDE) is FDA's path for a device that treats a condition affecting not more than 8,000 people in the US a
+year: FDA reviews safety and probable benefit, not effectiveness, and a hospital's institutional review board must
+approve its use.
+
+- **Scope.** Every PMA in openFDA's PMA dataset with advisory committee "OR" (Orthopedic), originals and supplements
+  (116 approvals, 2,411 supplements on 2026-11-22), which includes hyaluronic acid knee injections (MOZ) and bone
+  growth stimulators (LOF, LOE). HDEs come from FDA's HDE database (no API), advisory committee Orthopedic
+  (15 HDEs, 157 records). Old "N" numbers (pre-PMA new drug applications for devices) count as PMAs.
+- **One page per approval.** The approval number is the page's ID, the same as a 510(k) number. The page shows the
+  original approval and its supplements. A PMA chain has no predicates, so the predicate boxes say so.
+- **Supplements.** Each is sorted by FDA's supplement type and reason: panel-track supplements are new indications;
+  then design, labeling, post-approval study, manufacturing (process changes and 30-day notices), site (location
+  changes) and other. The page lists new indications and design, labeling and study changes, and counts
+  manufacturing and site notices. Every supplement is in `pc_approval_supplements.csv`.
+- **Indications.** From the approval order statement of the original approval, without its opening "Approval for
+  the device." sentence. When the statement has no indications text, the page reads NOT FOUND and points to the
+  Summary of Safety and Effectiveness Data (or Summary of Safety and Probable Benefit) on FDA's page.
+- **Missing originals.** openFDA lists only supplements for 6 PMAs, and the HDE database lists only supplements for
+  1 HDE (VEPTR, H030009). Those pages say the original is not on file and give no approval date.
+- **Company.** The FDA applicant name, matched to the vendor registry the same way as a 510(k) applicant (exact name,
+  reviewed family, then company name). An applicant the registry does not know gets its own company record.
+- **Everything else** uses the same rules as a 510(k): GUDID device IDs that cite the approval number, Open Payments
+  product records, recalls whose `pma_numbers` name it, MAUDE reports in the same five-year window, FDA-registered
+  sites whose listing names it, and Medicare add-on payments whose FDA number is the approval.
+- **Payments.** A record counts when a device ID in it resolves to the approval in GUDID (tier 1), or when it names a
+  brand that GUDID lists only under approvals (tier 2). A brand also used on 510(k) devices (Stryker's "Trident") is
+  left to the 510(k) pages, so no payment is counted twice. Approval records come from every Open Payments general
+  payment, not only the orthopedic-scope set the company pages use, because most approval makers (hyaluronic acid
+  makers, for example) are outside the 510(k) vendor registry. Many older products are named without a device ID or
+  a GUDID brand (Euflexxa, for example); those records are not counted, and the box says so.
+- **Adverse events.** Many recent MAUDE reports on PMA devices leave the FDA number blank (16 of 100 sampled MOZ
+  reports from 2024 to 2026 carried one). When an approval has no report in the last five years, the box gives the
+  year of the last report naming it and says newer reports can be missed.
+- **Registered sites.** A site counts as the company's own when its owner's name matches the approval's company or
+  FDA applicant (Genzyme for Sanofi Genzyme); otherwise it reads as a partner.
+- **Text.** FDA's older PMA records are in ALL CAPS. Indications and supplement descriptions are shown in sentence
+  case with the device's trade name, the applicant's name and acronyms kept capitalized; the words are FDA's.
+- **Reclassified codes.** FDA later moved some PMA product codes to Class II (bone cement LOD, interbody cages MAX,
+  bone growth stimulators LOF and others, per openFDA's product classification). Those pages give the code's
+  current class and say newer devices of that type reach the market through 510(k).
+- **Missing originals.** When FDA's database has only the supplements, the approval date reads NOT FOUND and the
+  earliest supplement date is given as such.
+- **Draft names and Medicare links.** The 37 product codes only approvals use carry plain-English names and 21
+  Medicare procedure links (`reference/approval_procedure_links.csv`) that Claude reviewed at the project owner's
+  direction on 2026-11-22. A professional review is still pending. Hand and finger joint codes stay unlinked, the
+  same rule as total wrist: the family for that DRG range is named "other than replacement".
+- **Alternatives.** A PMA or HDE counts as an active alternative in its product code when FDA approved it, or any
+  supplement to it, in the last five years. Many approvals are decades old and still sold; a recent supplement is
+  the public sign that a company still makes the device.
+- **Limitations.** The HDE database has no API, so HDEs are refreshed by hand. Hyaluronic acid injections, shock wave
+  therapy and similar office treatments are not in the Medicare view (the box reads NOT FOUND). Company pages count
+  only orthopedic-scope payments; product pages for approvals count every payment that links to them.
 
 ## 17. Decision briefs (`supabase/05_decision_functions.sql`)
 

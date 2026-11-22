@@ -1,0 +1,22 @@
+family_id,role,product_code,status,note
+hip_knee_replacement,implant,MRA,reviewed,Ceramic-on-ceramic total hip; CMS MS-DRG v41.1 DRG 469/470 (major hip and knee joint replacement). Reviewed by Claude 2026-11-22 at the owner's direction; professional review pending
+hip_knee_replacement,implant,OVO,reviewed,Ceramic-on-metal acetabular system for total hip replacement; DRG 469/470. Reviewed by Claude 2026-11-22; professional review pending
+hip_knee_replacement,implant,NXT,reviewed,Hip resurfacing; DRG 469/470 includes hip resurfacing. Reviewed by Claude 2026-11-22; professional review pending
+hip_knee_replacement,implant,LPF,reviewed,Total hip (metal/ceramic/ceramic) and hemi-femoral hip; DRG 469/470. Reviewed by Claude 2026-11-22; professional review pending
+hip_fracture_replacement,implant,LPF,reviewed,Hemi-femoral hip prosthesis also used after hip fracture; DRG 521/522. Reviewed by Claude 2026-11-22; professional review pending
+hip_knee_replacement,implant,NJL,reviewed,Mobile-bearing total knee; DRG 469/470. Reviewed by Claude 2026-11-22; professional review pending
+hip_knee_replacement,implant,NRA,reviewed,Mobile-bearing unicompartmental and total knee; DRG 469/470. Reviewed by Claude 2026-11-22; professional review pending
+hip_knee_replacement,implant,MBD,reviewed,Uncemented total knee; DRG 469/470. Reviewed by Claude 2026-11-22; professional review pending
+hip_knee_replacement,implant,NTG,reviewed,Total ankle replacement; DRG 469/470 title includes total ankle replacement (same rule as HSN). Reviewed by Claude 2026-11-22; professional review pending
+spine_surgery_no_fusion,implant,MJO,reviewed,Cervical and lumbar total disc replacement (no fusion); family description: CMS groups disc devices in DRG 518. Reviewed by Claude 2026-11-22; professional review pending
+spine_surgery_no_fusion,implant,NQO,reviewed,Interspinous and interlaminar devices used with or instead of decompression. Reviewed by Claude 2026-11-22; professional review pending
+spine_surgery_no_fusion,implant,QES,reviewed,Anular closure device placed during lumbar discectomy. Reviewed by Claude 2026-11-22; professional review pending
+spine_surgery_no_fusion,implant,QWK,reviewed,Posterior spinal element (facet) replacement after decompression; no fusion. Reviewed by Claude 2026-11-22; professional review pending
+spine_surgery_no_fusion,implant,SGK,reviewed,Dynamic tension band used with lumbar decompression; no fusion. Reviewed by Claude 2026-11-22; professional review pending
+thoracolumbar_fusion,biologic,NEK,reviewed,rhBMP-2 with LT-Cage for lumbar interbody fusion. Reviewed by Claude 2026-11-22; professional review pending
+thoracolumbar_fusion,biologic,OJZ,reviewed,Humanitarian BMP grafts for revision posterolateral lumbar fusion. Reviewed by Claude 2026-11-22; professional review pending
+thoracolumbar_fusion,biologic,NOX,reviewed,PearlMatrix is approved for lumbar interbody fusion. Reviewed by Claude 2026-11-22; professional review pending
+cervical_fusion,biologic,NOX,reviewed,i-Factor is approved for single-level ACDF. Reviewed by Claude 2026-11-22; professional review pending
+foot_soft_tissue,biologic,NOX,reviewed,Augment is approved for ankle and hindfoot fusion; family includes foot fusion. Reviewed by Claude 2026-11-22; professional review pending
+foot_soft_tissue,implant,PNW,reviewed,Synthetic cartilage implant for the big toe joint; mostly outpatient. Reviewed by Claude 2026-11-22; professional review pending
+knee_surgery_no_replacement,implant,QRU,reviewed,Resorbable osteochondral repair implant for the knee. Reviewed by Claude 2026-11-22; professional review pending

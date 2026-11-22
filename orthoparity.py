@@ -74,6 +74,10 @@ MAUDE_STEPS = [
     ("fetch-maude", "pipeline.fetch_maude",
      "Count FDA adverse event reports (MAUDE) for every orthopedic 510(k) from openFDA (free API key recommended)."),
 ]
+APPROVAL_STEPS = [
+    ("load-approvals", "pipeline.load_approvals",
+     "Add FDA premarket approvals (PMA) and humanitarian device exemptions (HDE) with their supplements, sites, recalls and reports."),
+]
 MEDICARE_STEPS = [
     ("load-medicare-hospitals", "pipeline.load_medicare",
      "Build the procedure view from CMS Medicare inpatient and outpatient hospital payments (national, no charges)."),
@@ -102,12 +106,15 @@ GROUPS = {
     "supplier": SUPPLIER_STEPS,
     "addon": ADD_ON_STEPS,
     "medicare": MEDICARE_STEPS,
+    "approvals": APPROVAL_STEPS,
     "site-data": [s for s in PREDICATE_STEPS if s[0] == "export-predicates"]
                  + [s for s in PAYMENT_STEPS if s[0] == "export-payments"] + MEDICARE_STEPS,
-    "all": PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + MAUDE_STEPS + SUPPLIER_STEPS + ADD_ON_STEPS + MEDICARE_STEPS,
+    "all": PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + MAUDE_STEPS + SUPPLIER_STEPS + ADD_ON_STEPS + MEDICARE_STEPS
+           + APPROVAL_STEPS,
 }
 STEPS = {name: (module, what) for name, module, what
-         in PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + MAUDE_STEPS + SUPPLIER_STEPS + ADD_ON_STEPS + MEDICARE_STEPS + TOOL_STEPS}
+         in PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + MAUDE_STEPS + SUPPLIER_STEPS + ADD_ON_STEPS + MEDICARE_STEPS
+         + APPROVAL_STEPS + TOOL_STEPS}
 
 
 def show_help() -> None:
@@ -117,6 +124,7 @@ def show_help() -> None:
                          ("Manufacturing sites and inspections", SUPPLIER_STEPS),
                          ("Medicare add-on payments", ADD_ON_STEPS),
                          ("Medicare procedure view", MEDICARE_STEPS),
+                         ("FDA approvals (PMA and HDE)", APPROVAL_STEPS),
                          ("Tools", TOOL_STEPS)):
         print(f"\n{title}:")
         for name, _, what in steps:

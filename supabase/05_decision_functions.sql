@@ -225,7 +225,7 @@ begin
   end loop;
   -- plurals after 1
   r := regexp_replace(r, '\m1 ((?:other |orthopedic |adverse event |industry-funded |FDA-registered |recall |research |product )?)(compan|stud|categor|injur|countr|famil|technolog)ies\M', '1 \1\2y', 'g');
-  r := regexp_replace(r, '\m1 ((?:other |orthopedic |adverse event |industry-funded |FDA-registered |recall |research |catalog |partner |company |warning |MAUDE |device |OAI |open |product )?)(clearance|site|report|recall|device|item|brand|event|time|predicate|code|generation|peer|consultant|recipient|physician|death|malfunction|payment|surgeon|inspection|letter|product|partner|MS-DRG|510\(k\))s\M', '1 \1\2', 'g');
+  r := regexp_replace(r, '\m1 ((?:other |orthopedic |adverse event |industry-funded |FDA-registered |recall |research |catalog |partner |company |warning |MAUDE |device |OAI |open |product )?)(clearance|approval|site|report|recall|device|item|brand|event|time|predicate|code|generation|peer|consultant|recipient|physician|death|malfunction|payment|surgeon|inspection|letter|product|partner|MS-DRG|510\(k\))s\M', '1 \1\2', 'g');
   r := regexp_replace(r, '\m1 ((?:[A-Za-z-]+ )?)(site|report|study|company|clearance|brand) (list|name|make)\M', '1 \1\2 \3s', 'g');
   r := regexp_replace(r, '\m1 ((?:[A-Za-z-]+ )?)(consultant|recipient|physician|device|other device) were\M', '1 \1\2 was', 'g');
   r := regexp_replace(r, '\m1 ((?:[A-Za-z-]+ )?)(clearance|study|report)s? have\M', '1 \1\2 has', 'g');
@@ -355,6 +355,46 @@ create or replace function pc_family_conflict(fams text[], dtext text) returns t
               then 'spine surgery' end
 $$;
 
+-- Phase 5: wording for FDA premarket approvals (PMA) and humanitarian device exemptions (HDE). The cards are written
+-- for 510(k)s; for an approval the same facts read with its own pathway name.
+create or replace function pc_appr_words(t text, lbl text) returns text language sql immutable as $$
+  select replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(t,
+    'the 510(k) number', 'the ' || lbl || ' number'),
+    '510(k) holder at clearance', lbl || ' holder at approval'),
+    'under another 510(k)', 'under another number'),
+    'this 510(k)', 'this ' || lbl),
+    'was cleared in', 'was approved in'),
+    'It was cleared ', 'It was approved '),
+    ' clearance likely cite', ' approval likely cite'),
+    '510(k)s share product code', 'devices share product code'),
+    'beyond what its 510(k) summary says', 'beyond what its approval documents say'),
+    'cleared devices in product code', 'cleared or approved devices in product code'),
+    'No other company cleared a device in product code', 'No other company cleared or approved a device in product code'),
+    'cite an earlier or later 510(k)', 'cite another 510(k) or approval'),
+    'no other recent clearances', 'no other recent clearances or approvals'),
+    'FDA cleared it for', 'FDA approved it for')
+$$;
+create or replace function pc_appr_words2(t text) returns text language sql immutable as $$
+  -- approvals have no predicates and are counted with clearances in a product code
+  select regexp_replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(t,
+    ' None name its direct predicates either.', ''),
+    'its cleared indications', 'its approved indications'),
+    'for this device or its predicates outside', 'for this device outside'),
+    'What clinical data supports it, or why is none needed beyond its predicates?', 'Can you share the clinical data behind the approval and any results published since?'),
+    'Evidence may rest on predicate devices or on studies outside Open Payments.', 'Evidence may rest on the approval''s own clinical study or on studies outside Open Payments.'),
+    'Evidence may come from predicate devices, published literature or studies outside Open Payments.', 'Evidence may come from the approval''s own clinical study, published literature or studies outside Open Payments.'),
+    'A device is cleared for specific uses.', 'A device is approved for specific uses.'),
+    'clearances have reports', 'cleared or approved devices have reports'),
+    'the median for clearances with recent reports', 'the median for devices with recent reports'),
+    '"label": "clearances in ', '"label": "devices cleared or approved in '),
+    '"label": "clearance in ', '"label": "device cleared or approved in '),
+    'No clearance in product code', 'No device in product code'),
+    'Clearances after ', 'Clearances and approvals after '),
+    -- older approvals are often named in Open Payments without a device ID or a GUDID brand (Euflexxa, for example)
+    'No Open Payments records from (\d{4}) to (\d{4}) name this (PMA|HDE) or its brand\.',
+    'No Open Payments record from \1 to \2 links to this \3 by device ID or by a brand name GUDID lists for it. Records that name the product another way are not counted.', 'g')
+$$;
+
 create or replace function pc_signals_live(k text)
 returns jsonb language plpgsql stable as $$
 declare
@@ -378,6 +418,7 @@ declare
   is_recent boolean; is_denovo boolean; is_label boolean; has_summary boolean; dec_year int; ifu_clean text;
   tot1 double precision; brand_name text; brand_only boolean; fam_match boolean; fam_list text; fam_other text; fam_id2 text; fam_name2 text; fam_status2 text; fam_from_ifu boolean := false; seg_fams text[]; ft_parent text; ft_from date; o5 int; mau_first int; dl text;
   wl5 int; oai5 int; chain text;
+  appr jsonb; is_appr boolean := false; lbl text; appr_changes text;
 begin
   b := pc_brief(kn);
   if not coalesce((b->>'found')::boolean, false) then
@@ -389,6 +430,9 @@ begin
   code := dev->>'product_code';
   plain := coalesce(pcode->>'plain_name', pcode->>'fda_name', code);
   data_end := pc_data_end();
+  lbl := coalesce(b->>'pathway', '510(k)');
+  appr := b->'approval';
+  is_appr := appr is not null and jsonb_typeof(appr) = 'object';
 
   select p.vendor_id, coalesce(nullif(x.rolls_up_to, ''), x.vendor_id) into vend, owner
     from pc_portfolio_510k p join pc_vendors x on x.vendor_id = p.vendor_id where p.knumber = kn;
@@ -467,12 +511,48 @@ begin
       'finding', 'This 510(k) updates labeling, such as MR safety conditions, for a device already on the market. ' || (c_nov->>'finding'),
       'ask', 'Does this labeling change affect how our facility scans patients with this implant, and has the instructions for use been updated in our system?');
   end if;
+  if is_appr then
+    appr_changes := nullif(concat_ws(', ',
+      case when (appr->>'new_indications')::int > 0 then pc_count((appr->>'new_indications')::int, 'new indication', 'new indications') end,
+      case when (appr->>'design_changes')::int > 0 then pc_count((appr->>'design_changes')::int, 'design change', 'design changes') end,
+      case when (appr->>'labeling_changes')::int > 0 then pc_count((appr->>'labeling_changes')::int, 'labeling change', 'labeling changes') end,
+      case when (appr->>'study_changes')::int > 0 then pc_count((appr->>'study_changes')::int, 'post-approval study change', 'post-approval study changes') end,
+      case when (appr->>'not_listed')::int > 0 then pc_count((appr->>'not_listed')::int, 'manufacturing or site notice', 'manufacturing or site notices') end), '');
+    c_nov := pc_card('novelty', 'Is it new?',
+      case when lbl = 'HDE' then 'Humanitarian device (HDE)'
+           when coalesce((appr->>'original_on_file')::boolean, true) then 'PMA approval, ' || coalesce(left(appr->>'decision_date', 4), 'year not on file')
+           else 'PMA approval, date not on file' end,
+      'info',
+      case when lbl = 'HDE'
+           then 'FDA approved it under a humanitarian device exemption (HDE)' || case when coalesce((appr->>'original_on_file')::boolean, true) then coalesce(' on ' || to_char((appr->>'decision_date')::date, 'Mon FMDD, YYYY'), '') else '' end
+                || ', for a condition affecting not more than 8,000 people in the US a year. FDA reviewed safety and probable benefit, not effectiveness, and a hospital''s institutional review board must approve its use.'
+           else 'FDA approved it through premarket approval (PMA)' || case when coalesce((appr->>'original_on_file')::boolean, true) then coalesce(' on ' || to_char((appr->>'decision_date')::date, 'Mon FMDD, YYYY'), '') else '' end
+                || '. A PMA is FDA''s review for Class III devices: the company submits its own clinical evidence of safety and effectiveness, with no predicate.' end
+        || case when lbl = 'PMA' and coalesce(pcode->>'device_class', '3') in ('1', '2')
+                then ' FDA has since moved product code ' || code || ' to Class ' || case pcode->>'device_class' when '1' then 'I' else 'II' end
+                     || ', so newer devices of this type reach the market through 510(k).' else '' end
+        || case when not coalesce((appr->>'original_on_file')::boolean, true)
+                then ' NOT FOUND: the original approval date. FDA''s ' || lbl || ' database lists only this ' || lbl || '''s supplements'
+                     || coalesce(', the earliest dated ' || to_char((appr->>'decision_date')::date, 'Mon FMDD, YYYY'), '') || '.' else '' end
+        || case when coalesce((appr->>'supplements')::int, 0) > 0
+                then case when coalesce((appr->>'original_on_file')::boolean, true) then ' Since then FDA approved ' else ' FDA approved ' end
+                     || pc_count((appr->>'supplements')::int, 'supplement', 'supplements') || coalesce(': ' || appr_changes, '') || '.'
+                     || coalesce(' The latest listed change was approved ' || to_char((appr->>'last_change_date')::date, 'Mon FMDD, YYYY') || ' (' || (appr->>'last_change_type') || ').', '')
+                else ' No supplements are on file.' end,
+      case when lbl = 'HDE' then 'HDE use needs approval from our institutional review board and is limited to the approved condition. Plan that before the first case.'
+           else 'A PMA device stands on its own clinical data, so its supplements, not a predicate chain, show how it has changed since approval.' end,
+      case when lbl = 'HDE' then 'Can you share the HDE approval letter and the materials our institutional review board needs before the first case?'
+           else 'Which supplements changed the version you are proposing, and does the approval''s clinical evidence cover that version?' end,
+      'predicates');
+  end if;
 
   -- 2. What else does this job? (other companies, same product code, last five years; grouped by current owner)
   with recent as (
+    -- an approval (PMA or HDE) counts as active when FDA approved it or any supplement to it in the window
     select coalesce(nullif(x.rolls_up_to, ''), x.vendor_id) as grp, p.knumber, p.device_name, p.decision_date
     from pc_portfolio_510k p join pc_vendors x on x.vendor_id = p.vendor_id
-    where p.product_code = code and p.decision_date > data_end - interval '5 years'),
+    left join (select number, max(decision_date) as last_sup from pc_approval_supplements group by number) sp on sp.number = p.knumber
+    where p.product_code = code and greatest(p.decision_date, sp.last_sup) > data_end - interval '5 years'),
   g as (
     select r.grp, count(*) as clearances,
            (array_agg(r.knumber order by r.decision_date desc, r.knumber desc))[1] as latest_knumber,
@@ -628,6 +708,15 @@ begin
   c_nov := c_nov || jsonb_build_object('asks', pc_asks(c_nov->>'ask',
              case when coalesce(n_peers, 0) > 0 then pc_num(n_peers) || ' other device' || case when n_peers = 1 then ' was' else 's were' end
                   || ' cleared on the same predicates. How does this one differ from them?' end));
+  if is_appr then
+    c_nov := c_nov || jsonb_build_object(
+      'headline', case when lbl = 'HDE' then 'Humanitarian device, no predicate.' else 'PMA approval, no predicate.' end,
+      'short', lbl,
+      'figs', jsonb_build_array(
+        jsonb_build_object('label', 'supplements approved', 'value', coalesce(appr->>'supplements', '0')),
+        jsonb_build_object('label', 'design, labeling, indication or study changes', 'value', coalesce(appr->>'supplements_shown', '0')),
+        jsonb_build_object('label', 'manufacturing or site notices', 'value', coalesce(appr->>'not_listed', '0'))));
+  end if;
   c_alt := c_alt || jsonb_build_object('asks', pc_asks(c_alt->>'ask',
              case when coalesce(n_code, 0) >= 5 then pc_num(n_code) || ' 510(k)s share product code ' || code
                   || '. What separates this device from the others in the code, beyond what its 510(k) summary says?' end));
@@ -692,6 +781,20 @@ begin
     'asks', pc_asks(c_ind->>'ask',
       case when sim is not null and sim < 0.9 then 'The indications wording is ' || round(sim * 100) || '% similar to its primary predicate, '
            || (ind->'predicate'->>'knumber') || '. What changed, and what data supports any new use?' end));
+  if is_appr then
+    c_ind := c_ind || jsonb_build_object('question', 'What is it approved to treat?');
+    if not (ind->>'found')::boolean or ifu_clean is null then
+      c_ind := c_ind || jsonb_build_object('badge', 'Not on file',
+        'finding', 'NOT FOUND: FDA''s approval order statement for this ' || lbl || ' has no indications text on file. The Summary of Safety and Effectiveness Data (SSED) on FDA''s ' || lbl || ' page has them.',
+        'ask', 'Can you provide the approved indications for this device?',
+        'asks', jsonb_build_array('Can you provide the approved indications for this device?'));
+    else
+      c_ind := c_ind || jsonb_build_object('finding', replace(c_ind->>'finding', 'Cleared for: ', 'Approved for: '),
+        'why', 'A device is approved for specific uses. Use outside them is off-label and can change coverage, consent and liability.',
+        'ask', 'Which of the approved indications will our surgeons use it for, and is any planned use outside them?',
+        'asks', jsonb_build_array('Which of the approved indications will our surgeons use it for, and is any planned use outside them?'));
+    end if;
+  end if;
 
   -- 3. Who sells it today?
   own := pc_device_owner(kn);
@@ -778,10 +881,19 @@ begin
                         || case when o5 > 0 then ', ' || pc_num(o5) || ' other or not stated' else '' end || ').' else ', none in the last five years.' end
                 || case when mau_first < dec_year then ' Reports dated before the ' || dec_year || ' clearance likely cite this 510(k) number in error or for an earlier version.' else '' end
                 || coalesce(' In product code ' || code || ', the median for clearances with recent reports is '
-                            || pc_num((mau->'category'->>'median_last5_with_reports')::numeric) || '.', '') end,
+                            || pc_num((mau->'category'->>'median_last5_with_reports')::numeric) || '.', '') end
+        -- Phase 5: many recent reports on PMA devices leave the FDA number blank (checked Nov 22, 2026: 16 of 100
+        -- sampled 2024 to 2026 MOZ reports carried a number), so a zero or a stop in the count can be a gap in the field
+        || case when is_appr and coalesce(r5, 0) = 0 and coalesce((mau->>'has_reports')::boolean, false)
+                  then ' The last report naming it is from ' || (mau->>'last_year') || '. Newer reports often leave the FDA number blank, so this count can miss them.'
+                when is_appr and not coalesce((mau->>'has_reports')::boolean, false)
+                  then ' Reports often leave the FDA number blank, so this count can miss them.'
+                else '' end,
       'A report is not proof that the device caused an event, and counts are not rates: widely used products get more reports. A report counts only when it names the 510(k) number.',
       case when coalesce(r5, 0) > 0
            then 'FDA received ' || pc_num(r5) || ' adverse event reports naming this product in the last five years (' || pc_count(d5, 'death', 'deaths') || ', ' || pc_count(i5, 'injury', 'injuries') || ', ' || pc_count(m5, 'malfunction', 'malfunctions') || '). What failure modes drive them, and what changed in response?'
+           when is_appr
+           then 'How many complaints and medical device reports has this product had in the last five years, and what drove them?'
            when coalesce((mau->>'has_reports')::boolean, false)
            then 'What drove the ' || pc_num((mau->>'reports')::numeric) || ' earlier adverse event reports, and were those issues resolved in the current design?'
            else 'No adverse event reports name this 510(k) number. Are complaints for this product reported to FDA under another 510(k)?' end,
@@ -1003,14 +1115,23 @@ begin
   elsif tpt_code is not null then
     addon_lead := 'Medicare grants an outpatient pass-through payment for it (HCPCS ' || tpt_code || ' in CY 2027). ';
   end if;
-  bl := addon_lead || case when is_label then 'A labeling update, such as MR safety conditions, for a device already on the market. ' else '' end || case pattern
+  bl := addon_lead || case when is_label then 'A labeling update, such as MR safety conditions, for a device already on the market. ' else '' end || case when is_appr then
+            case when lbl = 'HDE' then 'A humanitarian device (HDE), approved'
+                 when coalesce(pcode->>'device_class', '3') in ('1', '2') then 'A device approved through PMA'
+                 else 'A Class III device approved through PMA' end
+            || case when coalesce((appr->>'original_on_file')::boolean, true) then coalesce(' in ' || left(appr->>'decision_date', 4), '')
+                    else ' (original approval date not on file)' end
+            || case when lbl = 'PMA' and coalesce(pcode->>'device_class', '3') in ('1', '2')
+                    then ' (product code ' || code || ' is now Class ' || case pcode->>'device_class' when '1' then 'I' else 'II' end || ')' else '' end
+            || case when coalesce((appr->>'supplements_shown')::int, 0) > 0 then ' with ' || pc_count((appr->>'supplements_shown')::int, 'design, labeling, indication or study change', 'design, labeling, indication or study changes') || ' since,' else ',' end
+          else case pattern
           when 'line extension' then 'A line extension of ' || company || '''s own product line'
           when 'competitive entry' then 'A competitive entry against ' || coalesce(others, 'other companies'' devices')
           when 'mixed' then 'Builds on ' || company || '''s own devices and other companies'''
           else case when is_denovo then 'A De Novo device, FDA''s first of its kind,'
                     when is_new then 'A new clearance whose predicates are not posted yet,'
                     when not has_summary then 'A clearance with no 510(k) summary on file,'
-                    else 'A clearance with no predicate on file' end end
+                    else 'A clearance with no predicate on file' end end end
         || case when n_alt >= 20 then ' in a crowded product code (' || n_alt || ' other companies in five years). '
                 when n_alt >= 5 then ' in a competitive product code (' || n_alt || ' other companies in five years). '
                 when n_alt >= 1 then ' in a product code with few alternatives (' || n_alt || ' other compan' || case when n_alt = 1 then 'y' else 'ies' end || ' in five years). '
@@ -1021,25 +1142,65 @@ begin
                 when coalesce(tot, 0) > 0 then 'Industry payments name it. ' else '' end
         || case when coalesce(n_st, 0) = 0 then 'No industry-funded studies name it.' else n_st || ' industry-funded stud' || case when n_st = 1 then 'y names' else 'ies name' end || ' it.' end;
   bl := pc_fix_text(bl);
+  if is_appr then
+    cards := pc_appr_words2(pc_appr_words(cards::text, lbl))::jsonb;
+    cards := (select jsonb_agg(case when c ? 'figs' then jsonb_set(c, '{figs}', coalesce((select jsonb_agg(g order by o2)
+                 from jsonb_array_elements(c->'figs') with ordinality t2(g, o2) where g->>'label' not in ('peers on the same predicates', 'on its direct predicates')), '[]'::jsonb))
+               else c end order by o) from jsonb_array_elements(cards) with ordinality t(c, o));
+    bl := pc_appr_words(bl, lbl);
+  end if;
   cards := (select jsonb_agg(pc_fix_card(c) order by o) from jsonb_array_elements(cards) with ordinality t(c, o));
 
   return jsonb_build_object(
-    'found', true, 'knumber', kn,
+    'found', true, 'knumber', kn, 'pathway', lbl,
     'header', jsonb_build_object('device_name', dev->>'device_name', 'company', company, 'owner', owner_name,
                                  'plain_name', plain, 'fda_name', pcode->>'fda_name', 'product_code', code,
                                  'cleared', dev->>'decision_date', 'device_class', dev->>'device_class',
                                  'procedures', pcode->>'procedures', 'anatomy', pcode->>'anatomy', 'kind', pcode->>'kind',
-                                 'summary_url', dev->>'summary_url', 'pattern', pattern,
+                                 'summary_url', dev->>'summary_url', 'pattern', case when is_appr then lower(lbl) else pattern end,
                                  'days_since_clearance', days_new, 'new_clearance', is_new),
     'bottom_line', bl, 'cards', cards,
-    'alternatives', jsonb_build_object('window', 'Clearances after ' || to_char(data_end - interval '5 years', 'Mon DD, YYYY'),
+    'alternatives', jsonb_build_object('window', case when is_appr then 'Clearances and approvals after ' else 'Clearances after ' end || to_char(data_end - interval '5 years', 'Mon FMDD, YYYY'),
                                        'companies', n_alt, 'rows', alts),
     'notes', jsonb_build_array(
       'Signals come from fixed rules on public FDA and CMS data. They frame questions and are not a judgment of the device or the company.',
-      'Alternatives group companies by current owner and count clearances in the same FDA product code. A product code is broad, so not every alternative is a direct substitute.',
-      'Catalog counts are the GUDID device IDs that cite this 510(k). A system sold under several 510(k)s spreads its items across them.')
+      'Alternatives group companies by current owner and count ' || case when is_appr then 'clearances and approvals' else 'clearances' end || ' in the same FDA product code. A product code is broad, so not every alternative is a direct substitute.'
+        || ' A PMA or HDE counts when FDA approved it, or any supplement to it, in the window.',
+      'Catalog counts are the GUDID device IDs that cite this ' || lbl || '. A system sold under several 510(k)s or approvals spreads its items across them.')
+      || case when is_appr then jsonb_build_array(appr->>'definition',
+           'Supplements: the page lists design, labeling, indication and post-approval study changes. Manufacturing, process and site notices are counted, not listed. Source: FDA''s ' || lbl || ' database.') else '[]'::jsonb end
       || case when is_new then jsonb_build_array('This clearance is ' || days_new || ' days old. GUDID listings, establishment registrations and the 510(k) summary often appear weeks or months after FDA clears a device.') else '[]'::jsonb end);
 end $$;
+
+-- Phase 5: company pages whose portfolio includes FDA approvals (PMA or HDE). only = every item is an approval.
+create or replace function pc_vendor_appr_words(t text, only_appr boolean) returns text language sql immutable as $$
+  select case when only_appr then
+    replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(t,
+      'orthopedic 510(k)s', 'orthopedic approvals'),
+      'orthopedic 510(k)', 'orthopedic approval'),
+      'orthopedic clearances', 'orthopedic approvals'),
+      'orthopedic clearance', 'orthopedic approval'),
+      ' clearances in five years', ' approvals in five years'),
+      ' clearance in five years', ' approval in five years'),
+      'with clearances in ', 'with approvals in '),
+      'no recent clearances', 'no recent approvals'),
+      'No recent clearances', 'No recent approvals'),
+      '510(k) with reports', 'approval with reports'),
+      '510(k)s with reports', 'approvals with reports'),
+      'any of this company''s orthopedic 510(k)s', 'any of this company''s orthopedic approvals'),
+      'orthopedic clearances in the last ten years', 'orthopedic approvals in the last ten years')
+  else
+    replace(replace(replace(replace(replace(replace(replace(regexp_replace(t,
+      'of its ([0-9,]+) orthopedic 510\(k\)s', 'of its \1 orthopedic 510(k)s and approvals', 'g'),
+      'orthopedic clearances in the last five years', 'orthopedic clearances and approvals in the last five years'),
+      ' clearances in five years', ' clearances and approvals in five years'),
+      'with clearances in ', 'with clearances or approvals in '),
+      'no recent clearances', 'no recent clearances or approvals'),
+      'No recent clearances', 'No recent clearances or approvals'),
+      'orthopedic clearance in the last five years', 'orthopedic clearance or approval in the last five years'),
+      'any of this company''s orthopedic 510(k)s', 'any of this company''s orthopedic 510(k)s or approvals')
+  end
+$$;
 
 create or replace function pc_vendor_signals_live(v text, m text default 'pit')
 returns jsonb language plpgsql stable as $$
@@ -1057,7 +1218,7 @@ declare
   c_rec jsonb; c_ae jsonb; c_sup jsonb; c_med jsonb; c_add jsonb; mau jsonb; sup jsonb; vaddon jsonb; vprocs jsonb;
   top_fam text; top_name text; n_fam int; drg_min numeric; drg_max numeric; data_yr int; rec5 int;
   r5 int; d5 int; i5 int; m5 int; top_prod text; countries text; n_nct int; first_yr int;
-  top_unamb int; fam_list text; insp5 int;
+  top_unamb int; fam_list text; insp5 int; n_appr int;
 begin
   select * into ven from pc_vendors where vendor_id = v;
   if ven.vendor_id is null then return jsonb_build_object('found', false, 'vendor_id', v); end if;
@@ -1099,7 +1260,7 @@ begin
     where r.grp = v;
 
   -- all clearances, including the few with no product code on record
-  select count(*) into n_cl from pc_portfolio_510k
+  select count(*), count(*) filter (where knumber ~ '^(P|H|N)\d') into n_cl, n_appr from pc_portfolio_510k
     where vendor_id in (select vendor_id from pc_vendor_family(v, md) where md = 'current' or vendor_id = v);
 
   -- momentum
@@ -1164,7 +1325,11 @@ begin
 
   cards := jsonb_build_array(
     pc_card('breadth', 'Where do they compete?', breadth, 'info',
-      coalesce(pc_num(n_cl), '0') || ' orthopedic 510(k)' || case when n_cl = 1 then '' else 's' end || ' across ' || coalesce(n_codes, 0)
+      case when coalesce(n_appr, 0) = 0 then coalesce(pc_num(n_cl), '0') || ' orthopedic 510(k)' || case when n_cl = 1 then '' else 's' end
+           when n_appr = n_cl then pc_count(n_appr, 'orthopedic FDA approval (PMA or HDE)', 'orthopedic FDA approvals (PMA or HDE)')
+           else pc_num(n_cl - n_appr) || ' orthopedic 510(k)' || case when n_cl - n_appr = 1 then '' else 's' end
+                || ' and ' || pc_count(n_appr, 'FDA approval (PMA or HDE)', 'FDA approvals (PMA or HDE)') end
+        || ' across ' || coalesce(n_codes, 0)
         || ' product code' || case when n_codes = 1 then '' else 's' end || ', with clearances in '
         || coalesce(n_active, 0) || ' of them in the last five years.'
         || case when n_top3 = 1 then ' A top-3 filer in one category: ' || lower(top3_names) || '.'
@@ -1193,7 +1358,7 @@ begin
       case when acquired_by is not null then 'Acquired' when n_acq > 0 then 'Recent acquisitions'
            when jsonb_array_length(acq) > 0 then 'No recent changes' else 'No changes on record' end,
       case when acquired_by is not null or n_acq > 0 then 'attention' else 'info' end,
-      case when acquired_by is not null then 'Acquired by ' || acquired_by || coalesce(' on ' || to_char(acquired_on, 'Mon DD, YYYY'), '') || '.'
+      case when acquired_by is not null then 'Acquired by ' || acquired_by || coalesce(' on ' || to_char(acquired_on, 'Mon FMDD, YYYY'), '') || '.'
            when n_acq > 0 then 'Acquired ' || acq_names || '.'
            when jsonb_array_length(acq) > 0 then 'No acquisitions or ownership changes in the last five years. Earlier on record: '
                 || (select string_agg((x->>'name') || coalesce(' (' || to_char((x->>'date')::date, 'Mon YYYY') || ')', ''), ', ')
@@ -1498,19 +1663,31 @@ begin
   end if;
 
   bl := pc_fix_text(bl);
+  if coalesce(n_appr, 0) > 0 then
+    -- payments that name an approved product are on its product page even when the payer is outside the company scope
+    cards := (select jsonb_agg(case when c->>'key' = 'payments' and c->>'badge' = 'None in scope'
+                                     and exists (select 1 from pc_op_product o join pc_portfolio_510k p on p.knumber = o.knumber
+                                                  where p.vendor_id in (select vendor_id from pc_vendor_family(v, md) where md = 'current' or vendor_id = v)
+                                                    and p.knumber ~ '^(P|H|N)\d')
+                                    then c || jsonb_build_object('finding', (c->>'finding') || ' Open Payments records that name its FDA-approved products are counted on each product page.')
+                                    else c end order by o) from jsonb_array_elements(cards) with ordinality t(c, o));
+    cards := pc_vendor_appr_words(cards::text, n_appr = n_cl)::jsonb;
+    bl := pc_vendor_appr_words(bl, n_appr = n_cl);
+  end if;
   cards := (select jsonb_agg(pc_fix_card(c) order by o) from jsonb_array_elements(cards) with ordinality t(c, o));
   return jsonb_build_object(
     'found', true, 'mode', md, 'vendor', to_jsonb(ven), 'bottom_line', bl, 'cards', cards,
     'competition', comp, 'acquisitions', acq,
     'notes', jsonb_build_array(
       'Signals come from fixed rules on public FDA and CMS data. They frame questions and are not a judgment of the company.',
-      'Rank and share count 510(k) clearances in each product code over the last five years of data, by company. Clearances measure product activity, not sales.',
+      'Rank and share count 510(k) clearances in each product code over the last five years of data, by company. Clearances measure product activity, not sales.'
+        || case when coalesce(n_appr, 0) > 0 then ' Counts include FDA approvals (PMA and HDE), dated by the original approval.' else '' end,
       'Research is limited to studies in orthopedic scope by rule; some broad research programs may still include non-orthopedic work.'));
 end $$;
 
 grant execute on function pc_fig(text, text), pc_num(numeric), pc_figs(jsonb[]), pc_money(double precision), pc_data_end(), pc_card(text, text, text, text, text, text, text, text),
   pc_signals_live(text), pc_vendor_signals_live(text, text), pc_tc(text), pc_initcap(text), pc_fix_text(text), pc_fix_card(jsonb), pc_same_name(text, text),
-  pc_clean_ifu(text), pc_family_score(text, text), pc_family_conflict(text[], text) to anon, authenticated;
+  pc_clean_ifu(text), pc_family_score(text, text), pc_family_conflict(text[], text), pc_appr_words(text, text), pc_appr_words2(text), pc_vendor_appr_words(text, boolean) to anon, authenticated;
 
 -- pc_signals: cached front door for pc_signals_live (same name and arguments the website already calls).
 create or replace function pc_signals(k text)

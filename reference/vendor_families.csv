@@ -22,7 +22,7 @@ mathys,Mathys,Enovis,Joint reconstruction,^mathys,
 trilliant,Trilliant Surgical,Enovis,Foot and ankle,^trilliant,
 medshape,MedShape,Enovis,Foot and ankle,^medshape,
 novastep,Novastep,Enovis,Foot and ankle,^novastep,
-enovis_djo,Enovis (DJO),Enovis Corporation (public),Diversified,^(enovis|encoremedical|encoreorthopedics|djo|empi),Legacy names kept only where a public source confirms the ownership; see reference/ownership_sources.csv
+enovis_djo,Enovis (DJO),Enovis Corporation (public),Diversified,^(enovis|encoremedical|encoreorthopedics|djo|empi(?!rical)),Legacy names kept only where a public source confirms the ownership; see reference/ownership_sources.csv
 seaspine,SeaSpine,Orthofix,Spine and orthobiologics,^seaspine,
 orthofix,Orthofix,Orthofix Medical (public),Spine and orthopedics,^(orthofix|blackstonemedical),Blackstone Medical acquired 2006-09-22 (SEC)
 alphatec,Alphatec Spine,Alphatec Holdings (public),Spine,^(alphatec),Legacy names kept only where a public source confirms the ownership; see reference/ownership_sources.csv

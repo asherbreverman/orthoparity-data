@@ -1,5 +1,55 @@
 # Changelog
 
+## Phase 5 review: every approval page checked (2026-11-22)
+
+A review of all 131 PMA and HDE pages, their company pages and search, against FDA's PMA and HDE databases.
+
+- **Payments:** approval pages now read every Open Payments record that links to them, not only the orthopedic-scope
+  set (Synvisc went from none to $94K). Brands shared with 510(k)s are no longer counted on approval pages (Trident,
+  the Osteonics constrained insert and BHR had picked up brand-name payments that belong to 510(k) pages). Records that name a product without a device ID or a GUDID
+  brand are not counted, and the box says so.
+- **Empirical Spine:** LimiFlex (P220031, K253374) belonged to Enovis because the pattern for Empi, Inc. matched
+  "Empirical". It is its own company now.
+- **Dates:** 7 approvals whose original is missing from FDA's database read NOT FOUND for the approval date instead of
+  showing the earliest supplement as the approval. Dates drop the leading zero ("Aug 8", not "Aug 08") site-wide.
+- **Reclassified codes:** 30 PMAs in codes FDA later moved to Class II say so, and no longer read "Class III".
+- **Text:** FDA's ALL CAPS indications and supplement descriptions read in sentence case; stray Windows characters
+  ("Infuse\x99") fixed.
+- **Adverse events:** boxes with no recent report say newer reports often leave the FDA number blank.
+- **Sites:** a company's own registered site no longer reads as a partner when FDA lists it under another company
+  name (Genzyme for Sanofi Genzyme).
+- **Company pages:** 510(k) wording on company pages that include approvals (MAUDE, momentum, "no recent
+  clearances"), and a pointer from the payments box to product-level payments.
+- **Names and Medicare links:** the 37 draft product code names reviewed (QGP, OJZ, NOX and MPW corrected) and 21
+  Medicare procedure links added, by Claude at the project owner's direction, pending professional review.
+- **Tests:** casing, character cleanup and site ownership (`tests/test_approvals.py`, 133 pass).
+
+SQL to run: re-import the three approval CSVs (truncate first), then `13`, `02`, `12` and `05`.
+
+## FDA approvals: PMA and HDE (Phase 5, 2026-11-22)
+
+Class III orthopedic devices are on the site now, with one page per approval.
+
+- **131 approvals:** 116 PMAs (including hyaluronic acid knee injections and bone growth stimulators) and 15
+  humanitarian device exemptions (HDEs), from openFDA's PMA dataset and FDA's HDE database, advisory committee
+  Orthopedic.
+- **Supplements:** 2,554 on file. Each page lists new indications, design, labeling and post-approval study changes
+  (914) and counts manufacturing and site notices. Every supplement is in `pc_approval_supplements.csv`.
+- **Every box hooked in:** GUDID catalog items, Open Payments, recalls, MAUDE reports, FDA-registered sites, Medicare
+  add-on payments (Infuse, PearlMatrix, TOPS and TOUCH CMC 1 now show on their own pages) and company totals.
+- **Wording:** approval pages say approved, PMA or HDE, explain what each pathway means, and drop the predicate
+  questions. The "Is it new?" box shows the supplement history instead of a predicate chain.
+- **Alternatives:** an approval counts as active in its product code when FDA approved it or a supplement to it in
+  the last five years. Company pages count 510(k)s and approvals separately.
+- **New companies and product codes:** 25 applicants FDA names that the registry did not have, and 37 product codes
+  with draft plain-English names (`reference/approval_product_codes.csv`) awaiting review. The new codes are not yet
+  mapped to Medicare procedure families.
+- **Search:** P, H and N numbers open their page.
+- **Tests:** supplement categories, indications text and record building (`tests/test_approvals.py`).
+
+SQL to run: `13` (creates three tables), import `pc_approvals.csv`, `pc_approval_supplements.csv` and
+`pc_approval_rows.csv`, then `13` again, `02`, `12` and `05`.
+
 ## Full-site scan fixes, reviewed ownership and page cache (Phases 2 to 4, 2026-11-21 to 2026-11-22)
 
 A scan of every product page since 1996 and every company page, read the way a value analysis committee would.

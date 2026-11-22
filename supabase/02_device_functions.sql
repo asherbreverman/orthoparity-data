@@ -25,7 +25,7 @@ as $$
   exact as (
     select d.knumber, d.device_name, d.applicant, d.decision_date, d.segment, d.in_starting_set, 'exact'::text as match
     from pc_devices d, k
-    where k.kn ~ '^(K|DEN)\d{6}$' and d.knumber = k.kn
+    where k.kn ~ '^(K\d{6}|DEN\d{6}|P\d{6}|H\d{6}|N\d{4,5})$' and d.knumber = k.kn
   ),
   w as (
     select array_remove(regexp_split_to_array(lower(trim(coalesce(q, ''))), '\s+'), '') as words
@@ -483,6 +483,21 @@ begin
     jsonb_build_object('topic', 'Supply, quality and disclosure', 'question',
       'Does the requesting surgeon have a financial relationship with the company (consulting, royalties, ownership or research funding)? CMS Open Payments shows reported payments.'));
 
+  -- Phase 5: an approval (PMA or HDE) has no predicates; ask about its own evidence and supplements instead
+  if kn ~ '^(P|H|N)\d' and dev.status = 'approved' then
+    q := jsonb_build_array(case when kn ~ '^H\d'
+      then 'This is a humanitarian device (HDE): FDA reviewed safety and probable benefit for a condition affecting not more than 8,000 people in the US a year. Ask the vendor for the approval letter and what our institutional review board needs before the first case.'
+      else 'This is a PMA: FDA approved it on the company''s own clinical evidence, with no predicate. Ask the vendor for the Summary of Safety and Effectiveness Data and which supplements apply to the version proposed.' end);
+    vq := replace(replace(replace(replace(replace(vq::text,
+      'Is the requesting surgeon already using one of its predicates or a peer device?', 'Is the requesting surgeon already using a similar device in this product code?'),
+      'What specific features does this device have that its predicates lack, and what evidence shows those features change outcomes, complications or revisions?',
+        'What specific features does this device have that similar devices lack, and what evidence shows those features change outcomes, complications or revisions?'),
+      'What clinical data exists for this device itself, as opposed to data from its predicates?', 'Can you share the clinical study FDA reviewed for the approval, and any results published since?'),
+      'How does pricing compare with its predicates and the peer devices already on contract here?', 'How does pricing compare with similar devices already on contract here?'),
+      'Have this device or its predicates had recalls, field safety notices or adverse-event trends?', 'Has this device had recalls, field safety notices or adverse-event trends?')::jsonb;
+    pattern := case when kn ~ '^H\d' then 'hde' else 'pma' end;
+  end if;
+
   return jsonb_build_object(
     'found', true,
     -- clean applicant name for the page header. When it names the same company as today's owner (only the legal suffix
@@ -495,6 +510,10 @@ begin
                  'applicant_raw', dev.applicant),
     'product_code', to_jsonb(pcode),
     'ifu', to_jsonb(ifu),
+    -- Phase 5: 510(k), De Novo, PMA or HDE, and for an approval its supplement history (13_approvals.sql)
+    'pathway', case when kn like 'DEN%' then 'De Novo' when kn ~ '^H\d' then 'HDE' when kn ~ '^(P|N)\d' then 'PMA' else '510(k)' end,
+    'approval', case when kn ~ '^(P|H|N)\d' and to_regprocedure('pc_approval_detail(text)') is not null
+                     then pc_approval_detail(kn) end,
     'pattern', pattern,
     'direct_predicates', direct,
     'lineage', lineage,

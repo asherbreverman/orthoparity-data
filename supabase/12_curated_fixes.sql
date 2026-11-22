@@ -455,6 +455,24 @@ update pc_procedures
  where family_id = 'hip_knee_replacement' and description not like '%ankle%';
 
 -- ---------------------------------------------------------------------------------------------
+-- H. Phase 5: Empirical Spine (LimiFlex, P220031 and K253374) is its own company. The Enovis family pattern
+--    "empi" (Empi, Inc., a DJO company) also matched "Empirical Spine". Sources: FDA's PMA approval letter for P220031
+--    (Feb 12, 2026) and the K253374 clearance letter (Jun 16, 2026), both addressed to Empirical Spine, Inc.
+-- ---------------------------------------------------------------------------------------------
+insert into pc_vendors (vendor_id, display_name, basis, reviewed, note, rolls_up_to)
+select 'n_empiricalspine', 'Empirical Spine', 'own name', true,
+       'Split from enovis_djo in Phase 5: the Enovis name pattern for Empi, Inc. also matched Empirical Spine', 'n_empiricalspine'
+where not exists (select 1 from pc_vendors where vendor_id = 'n_empiricalspine');
+select pg_temp.op_split('enovis_djo', 'n_empiricalspine', 'Empirical Spine', '^empirical\s+spine');
+update pc_portfolio_brands set vendor_id = 'n_empiricalspine' where vendor_id = 'enovis_djo' and brand ~* 'limiflex';
+update pc_op_product set vendor_pit = 'n_empiricalspine' where knumber in ('P220031', 'K253374') and vendor_pit = 'enovis_djo';
+do $do$ begin
+  if to_regclass('public.pc_approvals') is not null then
+    update pc_approvals set vendor_id = 'n_empiricalspine', vendor_basis = 'own name (Phase 5 review)' where number = 'P220031';
+  end if;
+end $do$;
+
+-- ---------------------------------------------------------------------------------------------
 -- G. Recount totals for every vendor touched above
 -- ---------------------------------------------------------------------------------------------
 update pc_vendors v set
@@ -471,7 +489,7 @@ where v.vendor_id = v2.vendor_id
   and v.vendor_id in ('n_biomed', 'n_spine', 'n_usspine', 'n_lkspine', 'n_medical', 'n_rrmedical', 'n_rdmedical', 'n_zmedical',
                       'n_camedical', 'n_globalmedicalco', 'n_shmedical', 'n_surgical', 'n_amsurgical', 'n_esurgical', 'n_nssurgical',
                       'n_gsurgicalcoltd', 'n_medicalproducts', 'n_tagmedicalproducts', 'n_instruments', 'n_jjinstruments', 'integra',
-                      'n_integratedsurgicalsystems', 'n_integratedendoscopy');
+                      'n_integratedsurgicalsystems', 'n_integratedendoscopy', 'enovis_djo', 'n_empiricalspine');
 update pc_vendors set payment_kind = 'no payments'
  where payment_kind is null and vendor_id in (select vendor_id from pc_vendors where note like 'Split from %');
 

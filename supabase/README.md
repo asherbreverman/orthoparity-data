@@ -17,6 +17,7 @@ applies the reviewed ownership and naming fixes on top of it.
 | `09_maude_functions.sql` | FDA adverse event reports (MAUDE) for products and companies |
 | `10_supplier_functions.sql` | The supplier record on company pages: manufacturing sites, FDA inspections, 483 citations and warning letters |
 | `11_add_on_functions.sql` | Medicare add-on payments (NTAP and device pass-through) for products and companies |
+| `13_approvals.sql` | FDA premarket approvals (PMA) and humanitarian device exemptions (HDE): one page per approval, with its supplement history, hooked into every existing box. Run after `07`, before `12` |
 | `12_curated_fixes.sql` | Reviewed fixes on top of the imported data, each with its public source: company splits and merges, ownership changes, parents, segments, Medicare mappings. Run after every import and `07`, then rerun `05` |
 
 ## Page cache
@@ -39,8 +40,16 @@ so a cached page never outlives the data or the rules that made it. The cache st
    - Command line: `DATABASE_URL="postgresql://..." bash supabase/load_csv.sh outputs/site_data`
 3. Run `07_after_import.sql`. Its last query lists row counts; each should be one less than the line count of
    the matching CSV (the header line).
+4. Run `13_approvals.sql` once to create its three tables, import `pc_approvals.csv`, `pc_approval_supplements.csv`
+   and `pc_approval_rows.csv` into them, then run `13_approvals.sql` again, `12_curated_fixes.sql` and
+   `05_decision_functions.sql`.
 
 ## Update an existing database
+
+- Phase 5, FDA approvals (2026-11-22): run `13_approvals.sql` (it creates `pc_approvals`, `pc_approval_supplements`
+  and `pc_approval_rows`; with no rows yet it changes nothing), import the three new CSVs, run `13_approvals.sql`
+  again, then `02`, `12` and `05`. No other table is re-imported: 13 adds the approval rows to the existing tables
+  and takes out the ones it added last time.
 
 - Phase 4 (2026-11-22): run `02`, `03`, `10`, `12`, then `05`, each in a new query tab. They add the page cache, the
   Kyocera name and the GUDID wording fix. No CSV import.
@@ -58,8 +67,8 @@ so a cached page never outlives the data or the rules that made it. The cache st
 - Added the procedure view (2026-11-19): run `01_tables.sql` (it only adds the six new `pc_procedure*` and
   `pc_supply_evidence` tables; existing tables and data stay as they are), then `08_procedure_functions.sql`. Import
   the six new CSVs and run `07_after_import.sql`.
-- New data, same structure: re-import the CSVs, then run `07_after_import.sql`, `12_curated_fixes.sql` and
-  `05_decision_functions.sql`, in that order.
+- New data, same structure: re-import the CSVs, then run `07_after_import.sql`, `13_approvals.sql`,
+  `12_curated_fixes.sql` and `05_decision_functions.sql`, in that order.
 - Changed functions: run the file that holds them. Each uses `create or replace`, so nothing is lost.
 
 ## Keys
