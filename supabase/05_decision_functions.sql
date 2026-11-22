@@ -88,6 +88,14 @@ create or replace function pc_country(c text) returns text language sql immutabl
     when 'ZA' then 'South Africa' else upper(c) end
 $$;
 
+-- a company name for sentences: legal suffixes dropped ("SI-BONE, INC." -> "SI-BONE"); an unparsed name reads "an unnamed company"
+create or replace function pc_co(n text) returns text language sql immutable as $$
+  select case when n is null or btrim(n) = '' or n ilike 'no company name found%' then 'an unnamed company'
+              else btrim(regexp_replace(regexp_replace(btrim(n),
+                     '[,\s]+(inc|incorporated|llc|l\.l\.c|ltd|limited|corp|corporation|co|gmbh|s\.a|s\.r\.l|b\.v|bv|plc|lp)\.?$', '', 'i'),
+                     '[,\s]+(inc|incorporated|llc|ltd|corp|co)\.?$', '', 'i'), ' ,') end
+$$;
+
 -- What is it cleared to treat? This 510(k)'s Indications for Use and how closely the wording matches its primary
 -- predicate's (trigram similarity on the extracted text; a wording comparison, not a clinical judgment)
 create or replace function pc_device_indications(k text) returns jsonb language sql stable as $$
@@ -126,6 +134,7 @@ declare
   fam_dis numeric; sup30 numeric; sup50 numeric; data_yr int; n_nct int; nct_ids text; pred_recalls int;
   n_peers int; n_code int; r5 int; d5 int; i5 int; m5 int; partners text; countries text; flagged text;
   ntap_amt numeric; ntap_name text; tpt_code text; cat_tech text;
+  days_new int; is_new boolean; is_capital boolean; dtext text; peer_names text; addon_lead text := '';
 begin
   b := pc_brief(kn);
   if not coalesce((b->>'found')::boolean, false) then
@@ -142,18 +151,24 @@ begin
     from pc_portfolio_510k p join pc_vendors x on x.vendor_id = p.vendor_id where p.knumber = kn;
   select display_name into owner_name from pc_vendors where vendor_id = owner;
   select coalesce(display_name, company) into company from pc_vendors where vendor_id = vend;
-  company := coalesce(company, dev->>'applicant');
+  company := pc_co(coalesce(company, dev->>'applicant'));
+  owner_name := pc_co(owner_name);
+  -- a clearance in its first 120 days: FDA's GUDID, registration and summary records often trail it
+  days_new := data_end - nullif(dev->>'decision_date', '')::date;
+  is_new := coalesce(days_new, 9999) <= 120;
+  is_capital := coalesce(pcode->>'kind', '') in ('capital equipment', 'software');
+  dtext := lower(coalesce(dev->>'device_name', '') || ' ' || coalesce(plain, ''));
 
   -- 1. Is it new?
   select count(*), count(*) filter (where (e->>'same_company')::boolean),
          (array_agg(coalesce(e->>'device_name', '') || ' (' || (e->>'predicate') || ')') filter (where e->>'role' = 'primary'))[1],
-         string_agg(distinct rtrim(e->>'applicant', '.'), ', ') filter (where not (e->>'same_company')::boolean)
+         string_agg(distinct pc_co(e->>'applicant'), ', ') filter (where not (e->>'same_company')::boolean)
     into n_direct, n_same, prim, others
     from jsonb_array_elements(coalesce(b->'direct_predicates', '[]'::jsonb)) e;
   gens := nullif(lin->>'generations', '')::int;
   if coalesce(gens, 0) > 1 then
     lin_end := ' The predicate record goes back ' || gens || ' generations to ' || coalesce(lin->'ends_at'->>'device_name', 'an earlier device')
-               || ' (' || coalesce(lin->'ends_at'->>'applicant', 'unknown company') || ', ' || coalesce(lin->'ends_at'->>'decision_year', 'year unknown') || ').';
+               || ' (' || pc_co(lin->'ends_at'->>'applicant') || ', ' || coalesce(lin->'ends_at'->>'decision_year', 'year unknown') || ').';
   else
     lin_end := '';
   end if;
@@ -197,20 +212,33 @@ begin
                                                'latest_knumber', g.latest_knumber, 'latest_device', g.latest_device,
                                                'latest_date', g.latest_date)
                             order by g.clearances desc, g.latest_date desc), '[]'::jsonb),
-         (array_to_string((array_agg(rtrim(v.display_name, '.') order by g.clearances desc, g.latest_date desc))[1:3], ', '))
+         (array_to_string((array_agg(pc_co(v.display_name) order by g.clearances desc, g.latest_date desc))[1:3], ', '))
     into n_alt, alts, alt_names
     from g join pc_vendors v on v.vendor_id = g.grp;
+  -- closest equivalents: other companies' devices that share this device's predicates, most shared first
+  -- grouped by current owner, so a sister company or the new owner never counts as an equivalent
+  select string_agg(co, ', ' order by ns desc, nd desc, latest desc) into peer_names from (
+    select pc_co(v.display_name) as co, max((x->>'n_shared')::int) as ns, count(*) as nd, max(x->>'decision_year') as latest
+      from jsonb_array_elements(coalesce(b->'peers'->'peers', '[]'::jsonb)) x
+      join pc_portfolio_510k pp on pp.knumber = x->>'knumber'
+      join pc_vendors pv on pv.vendor_id = pp.vendor_id
+      join pc_vendors v on v.vendor_id = coalesce(nullif(pv.rolls_up_to, ''), pv.vendor_id)
+     where v.vendor_id is distinct from owner
+     group by 1 order by 2 desc, 3 desc, 4 desc limit 3) z;
   crowd := case when n_alt >= 20 then 'Crowded' when n_alt >= 5 then 'Competitive' when n_alt >= 1 then 'Few alternatives'
                 else 'No recent alternatives' end;
   c_alt := pc_card('alternatives', 'What else does the job?', crowd, case when n_alt < 5 then 'attention' else 'info' end,
-    case when n_alt > 0 then n_alt || ' other compan' || case when n_alt = 1 then 'y' else 'ies' end || ' cleared ' || plain
-           || ' devices in the last five years of data, including ' || alt_names || '.'
-         else 'No other company cleared a ' || plain || ' device in the last five years of data.' end,
+    case when n_alt > 0 then n_alt || ' other compan' || case when n_alt = 1 then 'y' else 'ies' end || ' cleared devices in product code ' || code
+           || ' (' || plain || ') in the last five years of data, including ' || alt_names || '.'
+         else 'No other company cleared a device in product code ' || code || ' (' || plain || ') in the last five years of data.' end
+    || coalesce(' Closest equivalents, sharing this device''s predicates: ' || peer_names || '.', ''),
     case when n_alt >= 20 then 'Plenty of substitutes. Standardizing on fewer vendors in this category is realistic.'
          when n_alt >= 5 then 'Several substitutes exist, so a head-to-head comparison is practical.'
          when n_alt >= 1 then 'Few substitutes. Supply continuity and backup options matter more.'
          else 'Little recent competition. Supply continuity matters more.' end,
-    case when n_alt >= 5 then 'How does it compare with products from ' || alt_names || ' on outcomes, instrument sets and total cost per case?'
+    case when is_capital then 'Which competing systems did you evaluate against, and what is the total cost per case at our volume, including service and disposables?'
+         when peer_names is not null then 'How does it compare with the closest equivalents from ' || peer_names || ' on outcomes, instrument sets and total cost per case?'
+         when n_alt >= 5 then 'How does it compare with products from ' || alt_names || ' on outcomes, instrument sets and total cost per case?'
          else 'If supply is interrupted, what is the backup?' end,
     'alternatives');
 
@@ -241,11 +269,12 @@ begin
     from pc_op_research
     where ('|' || coalesce(knumbers, '') || '|') like '%|' || kn || '|%' and coalesce(ortho, true);
   c_ev := pc_card('evidence', 'What clinical evidence exists?',
-    case when n_st > 0 then n_st || ' stud' || case when n_st = 1 then 'y' else 'ies' end else 'None linked' end,
+    case when n_st > 0 then n_st || ' industry-funded' else 'None in Open Payments' end,
     case when n_st > 0 then 'info' else 'attention' end,
     case when n_st > 0 then n_st || ' industry-funded research stud' || case when n_st = 1 then 'y names' else 'ies name' end
                             || ' this 510(k) (' || pc_money(st_amt) || ' reported, latest ' || st_last || ').'
-         else 'No industry-funded research in Open Payments names this 510(k).' end,
+         else 'No industry-funded research in Open Payments names this 510(k).' end
+    || ' Published studies and registry data are not included yet.',
     case when n_st > 0 then 'The company is collecting data on this device. Ask for results, not just enrollment.'
          else 'Evidence may rest on predicate devices or on studies outside Open Payments.' end,
     'What clinical data exists for this device itself, as opposed to its predicates?',
@@ -256,16 +285,20 @@ begin
   select percentile_cont(0.5) within group (order by gudid_devices) into med_skus
     from pc_portfolio_510k where product_code = code and gudid_devices > 0;
   c_cat := pc_card('catalog', 'What will it take to stock on the shelf?',
-    case when coalesce(skus, 0) = 0 then 'Not in GUDID'
+    case when coalesce(skus, 0) = 0 and is_new then 'Not yet in GUDID'
+         when coalesce(skus, 0) = 0 then 'No GUDID match'
          when skus_in < skus then (skus - skus_in) || ' discontinued'
          else skus || ' catalog items' end,
     case when coalesce(skus, 0) = 0 or skus_in < skus then 'attention' else 'info' end,
     case when coalesce(skus, 0) > 0 then
            'FDA''s GUDID lists ' || skus || ' device IDs (catalog items) under this 510(k), ' || skus_in || ' in commercial distribution.'
            || coalesce(' The median for this category is ' || round(med_skus)::int || '.', '')
-         else 'No GUDID device IDs cite this 510(k). Its labels may cite a later or earlier 510(k).' end,
+         when is_new then 'No GUDID device IDs cite this 510(k) yet. It was cleared ' || days_new || ' days before this data release, and GUDID listings for a new clearance often appear later.'
+         else 'No GUDID device record lists this 510(k) number. That usually means the labels cite an earlier or later 510(k), or leave the field blank. Ask the vendor for the part-number list.' end
+    || case when is_capital then ' For capital equipment, the cost to own matters more than catalog size.' else '' end,
     'Each device ID is a line in your item master. Larger catalogs mean more items to load, more trays and more inventory.',
-    case when coalesce(skus, 0) > 0 then 'How many trays per case, and are sets loaner, consigned or sterile-packed?'
+    case when is_capital then 'What does it cost to own per year: purchase or lease, service contract, software updates and per-case disposables?'
+         when coalesce(skus, 0) > 0 then 'How many trays per case, and are sets loaner, consigned or sterile-packed?'
          else 'Is every item listed in GUDID with a UDI-DI we can load into our item master?' end,
     'catalog');
 
@@ -286,7 +319,7 @@ begin
              then n_st || case when n_st = 1 then ' study names it.' else ' studies name it.' end
              else 'No studies name it.' end);
   c_cat := c_cat || jsonb_build_object('headline', case when coalesce(skus, 0) > 0
-             then skus || ' catalog items.' else 'Not listed in GUDID.' end);
+             then skus || ' catalog items.' when is_new then 'Not yet in GUDID.' else 'No GUDID match.' end);
   -- stat tiles and short labels for the page design
   c_nov := c_nov || jsonb_build_object('short', 'New', 'figs', pc_figs(
              pc_fig(pc_num(n_same), 'of ' || company || '''s own devices'),
@@ -294,7 +327,7 @@ begin
              pc_fig(pc_num(gens), 'generations on record'),
              pc_fig(lin->'ends_at'->>'decision_year', 'earliest predicate on record')));
   c_alt := c_alt || jsonb_build_object('short', 'Alternatives', 'figs', pc_figs(
-             pc_fig(pc_num(n_alt), 'other companies, last five years'),
+             pc_fig(pc_num(n_alt), 'other companies by current owner, last five years'),
              pc_fig(pc_num((b->'peers'->>'total')::numeric), 'peers on the same predicates'),
              pc_fig(pc_num((b->'category'->>'total')::numeric), 'clearances in ' || code)));
   c_pay := c_pay || jsonb_build_object('short', 'Financial ties', 'figs', case when coalesce(tot, 0) > 0 then pc_figs(
@@ -321,7 +354,7 @@ begin
              case when coalesce(n_code, 0) >= 5 then pc_num(n_code) || ' 510(k)s share product code ' || code
                   || '. What separates this device from the others in the code, beyond what its 510(k) summary says?' end));
   c_pay := c_pay || jsonb_build_object('asks', pc_asks(c_pay->>'ask',
-             'Which surgeons at our hospital receive royalties or consulting fees from ' || company || ', and what hourly consulting rate do you pay?',
+             'Will you disclose every financial relationship ' || company || ' has with our requesting surgeons, as our conflict-of-interest policy requires?',
              case when coalesce(tot, 0) > 0 then 'Explain the ' || pc_money(tot) || ' in industry payments that name this product: how much was royalties, consulting, education, travel and meals?' end));
   select count(distinct ct_gov_id) filter (where coalesce(ct_gov_id, '') <> ''),
          string_agg(distinct ct_gov_id, ', ') filter (where coalesce(ct_gov_id, '') <> '')
@@ -343,13 +376,15 @@ begin
   ind := pc_device_indications(kn);
   sim := nullif(ind->>'similarity', '')::numeric;
   c_ind := pc_card('indications', 'What is it cleared to treat?',
-    case when not (ind->>'found')::boolean then 'Not on file'
+    case when not (ind->>'found')::boolean and is_new then 'Not on file yet'
+         when not (ind->>'found')::boolean then 'Not on file'
          when sim is null then 'On file'
          when sim >= 0.9 then 'Same wording as predicate'
          when sim >= 0.6 then 'Close to predicate'
          else 'Differs from predicate' end,
     case when not (ind->>'found')::boolean then 'attention' else 'info' end,
-    case when not (ind->>'found')::boolean then 'NOT FOUND: the Indications for Use could not be read from the 510(k) summary. The FDA PDF has it.'
+    case when not (ind->>'found')::boolean and is_new then 'NOT FOUND: the Indications for Use are not on file yet. The clearance is ' || days_new || ' days old, and FDA may not have posted its summary when this data was built.'
+         when not (ind->>'found')::boolean then 'NOT FOUND: the Indications for Use could not be read from the 510(k) summary. The FDA PDF has it.'
          else 'Cleared for: ' || left(ind->>'ifu_text', 260) || case when length(ind->>'ifu_text') > 260 then '…' else '' end
               || case when sim is not null then ' The wording is ' || round(sim * 100) || '% similar to its primary predicate, '
                         || coalesce(ind->'predicate'->>'device_name', 'name not on file') || ' (' || (ind->'predicate'->>'knumber') || ').'
@@ -439,12 +474,14 @@ begin
     select string_agg(pc_country(x), ', ') into countries from jsonb_array_elements_text(sup->'countries_making') x where x <> 'US';
     select string_agg(x, ', ') into flagged from (select jsonb_array_elements_text(sup->'flagged_sites') x limit 3) z;
     c_sup := pc_card('supplier', 'What is the vendor''s supplier record?',
-      case when (sup->>'sites')::int = 0 then 'No sites on file'
+      case when (sup->>'sites')::int = 0 and is_new then 'No sites yet'
+           when (sup->>'sites')::int = 0 then 'No sites on file'
            when (sup->>'warning_letters_last5')::int > 0 then (sup->>'warning_letters_last5') || ' warning letter' || case when (sup->>'warning_letters_last5')::int = 1 then '' else 's' end
            when (sup->>'oai_last5')::int > 0 then (sup->>'oai_last5') || ' OAI inspection' || case when (sup->>'oai_last5')::int = 1 then '' else 's' end
            else (sup->>'sites') || ' site' || case when (sup->>'sites')::int = 1 then '' else 's' end end,
       case when (sup->>'warning_letters_last5')::int > 0 or (sup->>'oai_last5')::int > 0 then 'attention' else 'info' end,
-      case when (sup->>'sites')::int = 0 then 'No FDA establishment registration lists this 510(k) number, so its manufacturing sites are not on file.'
+      case when (sup->>'sites')::int = 0 and is_new then 'No FDA establishment registration lists this 510(k) number yet. Companies list a new clearance on their registrations after FDA clears it, so new products often show none at first.'
+           when (sup->>'sites')::int = 0 then 'No FDA establishment registration lists this 510(k) number, so its manufacturing sites are not on file.'
            else (sup->>'sites') || ' FDA-registered site' || case when (sup->>'sites')::int = 1 then ' lists' else 's list' end || ' this 510(k): '
                 || array_to_string(array_remove(array[
                      case when (sup->>'company_sites')::int > 0 then (sup->>'company_sites') || ' of the company''s own' end,
@@ -478,22 +515,30 @@ begin
     procs := coalesce(pc_device_procedures(kn)->'procedures', '[]'::jsonb);
     n_fam := jsonb_array_length(procs);
     select x->>'family_id', x->>'name', x->>'status' into fam_id, fam_name, fam_status
-      from jsonb_array_elements(procs) x order by (x->>'flagship')::boolean desc nulls last, x->>'name' limit 1;
+      from jsonb_array_elements(procs) x
+     order by (case when dtext ~ '(knee|hip|femoral|acetab|tibial)' and x->>'name' ~* '(hip|knee)' then 1
+                    when dtext ~ '(spin|lumbar|cervical|thoracolumbar|interbody|pedicle|vertebr|sacr)' and x->>'name' ~* '(fusion|spin)' then 1
+                    when dtext ~ '(shoulder|humer|glenoid|elbow)' and x->>'name' ~* '(shoulder|elbow)' then 1
+                    when dtext ~ '(ankle|foot|toe|hallux|bunion|metatars|calcane)' and x->>'name' ~* 'foot' then 1
+                    when dtext ~ '(hand|wrist|radius|ulna|finger)' and x->>'name' ~* '(hand|wrist)' then 1
+                    else 0 end) desc,
+              (x->>'flagship')::boolean desc nulls last, x->>'name' limit 1;
     select count(*), min(medicare_pays), max(medicare_pays) into drg_n, drg_min, drg_max from pc_procedure_drg where family_id = fam_id;
     select medicare_pays, discharges, supply_total_30, supply_total_50, data_year into fam_avg, fam_dis, sup30, sup50, data_yr
       from pc_procedures where family_id = fam_id;
     c_med := pc_card('medicare', 'What does Medicare pay for procedures that use it?',
-      case when fam_id is null then 'No procedure match' else pc_pay_range(drg_min, drg_max, true) || ' per case' end,
+      case when fam_id is null then 'No procedure match' else pc_pay_range(drg_min, drg_max, true) || ' per inpatient case' end,
       'info',
       case when fam_id is null then 'NOT FOUND: product code ' || coalesce(code, 'none') || ' is not mapped to a Medicare procedure family.'
-           else 'Used in ' || lower(fam_name) || ': ' || drg_n || ' MS-DRG' || case when drg_n = 1 then '' else 's' end || ', '
+           else 'Medicare inpatient hospital payments, ' || data_yr || '. Used in ' || lower(fam_name) || ': ' || drg_n || ' MS-DRG' || case when drg_n = 1 then '' else 's' end || ', '
                 || pc_num(fam_dis) || ' Medicare discharges in ' || data_yr || '. Medicare paid ' || pc_pay_range(drg_min, drg_max)
                 || ' on average per case' || case when drg_n > 1 then ', depending on the DRG (' || pc_usd(round(fam_avg)) || ' across the family)' else '' end || '. '
                 || 'This pays for the whole stay and every implant in it, not this product alone.'
                 || case when sup30 is not null then ' Published cost studies put all implants at 30% to 50% of the case payment, about '
                           || pc_usd(round(sup30)) || ' to ' || pc_usd(round(sup50)) || '.' else '' end
                 || case when n_fam > 1 then ' It is also mapped to ' || (n_fam - 1) || ' other procedure famil' || case when n_fam = 2 then 'y.' else 'ies.' end else '' end
-                || ' The link from product code ' || code || ' to this procedure is ' || coalesce(fam_status, 'draft') || '.' end,
+                || ' The link from product code ' || code || ' to this procedure is ' || coalesce(fam_status, 'draft') || '.'
+                || ' Outpatient and ASC payments are not shown here.' end,
       'The DRG payment is fixed per case, so the implant cost has to fit inside it with the room, the operating room and the nursing. Which DRG a case falls into depends on the approach, levels and complications.',
       case when fam_id is null then 'Which inpatient and outpatient procedures is this product used in?'
            else 'Medicare pays ' || pc_pay_range(drg_min, drg_max) || ' per case for ' || lower(fam_name)
@@ -550,18 +595,24 @@ begin
   end if;
   cards := pc_figs(c_nov, c_ind, c_own, c_alt, c_pay, c_ev, c_cat, c_rec, c_ae, c_sup, c_med, c_add);
 
-  bl := case pattern
+  if ntap_amt is not null then
+    addon_lead := 'Medicare grants a new-technology add-on payment for it (NTAP, up to ' || pc_money(ntap_amt) || ' per inpatient case in FY 2027). ';
+  elsif tpt_code is not null then
+    addon_lead := 'Medicare grants an outpatient pass-through payment for it (HCPCS ' || tpt_code || ' in CY 2027). ';
+  end if;
+  bl := addon_lead || case pattern
           when 'line extension' then 'A line extension of ' || company || '''s own product line'
           when 'competitive entry' then 'A competitive entry against ' || coalesce(others, 'other companies'') devices')
           when 'mixed' then 'Builds on ' || company || '''s own devices and other companies'''
           else 'A clearance with no predicate on file' end
-        || case when n_alt >= 20 then ' in a crowded category (' || n_alt || ' other companies in five years). '
-                when n_alt >= 5 then ' in a competitive category (' || n_alt || ' other companies in five years). '
-                when n_alt >= 1 then ' in a category with few alternatives (' || n_alt || ' other compan' || case when n_alt = 1 then 'y' else 'ies' end || ' in five years). '
-                else ' in a category with no other recent clearances. ' end
+        || case when n_alt >= 20 then ' in a crowded product code (' || n_alt || ' other companies in five years). '
+                when n_alt >= 5 then ' in a competitive product code (' || n_alt || ' other companies in five years). '
+                when n_alt >= 1 then ' in a product code with few alternatives (' || n_alt || ' other compan' || case when n_alt = 1 then 'y' else 'ies' end || ' in five years). '
+                else ' in a product code with no other recent clearances. ' end
         || case when coalesce(roy, 0) > 0 then 'Royalties are paid on it. '
                 when coalesce(tot, 0) > 0 then 'Industry payments name it. ' else '' end
-        || case when coalesce(n_st, 0) = 0 then 'No industry-funded studies name it.' else n_st || ' industry-funded stud' || case when n_st = 1 then 'y names' else 'ies name' end || ' it.' end;
+        || case when coalesce(n_st, 0) = 0 then 'No industry-funded studies name it.' else n_st || ' industry-funded stud' || case when n_st = 1 then 'y names' else 'ies name' end || ' it.' end
+        || case when is_new then ' Cleared ' || days_new || ' days before this data release, so some FDA records may not be posted yet.' else '' end;
 
   return jsonb_build_object(
     'found', true, 'knumber', kn,
@@ -569,14 +620,16 @@ begin
                                  'plain_name', plain, 'fda_name', pcode->>'fda_name', 'product_code', code,
                                  'cleared', dev->>'decision_date', 'device_class', dev->>'device_class',
                                  'procedures', pcode->>'procedures', 'anatomy', pcode->>'anatomy', 'kind', pcode->>'kind',
-                                 'summary_url', dev->>'summary_url', 'pattern', pattern),
+                                 'summary_url', dev->>'summary_url', 'pattern', pattern,
+                                 'days_since_clearance', days_new, 'new_clearance', is_new),
     'bottom_line', bl, 'cards', cards,
     'alternatives', jsonb_build_object('window', 'Clearances after ' || to_char(data_end - interval '5 years', 'Mon DD, YYYY'),
                                        'companies', n_alt, 'rows', alts),
     'notes', jsonb_build_array(
       'Signals come from fixed rules on public FDA and CMS data. They frame questions and are not a judgment of the device or the company.',
       'Alternatives group companies by current owner and count clearances in the same FDA product code. A product code is broad, so not every alternative is a direct substitute.',
-      'Catalog counts are the GUDID device IDs that cite this 510(k). A system sold under several 510(k)s spreads its items across them.'));
+      'Catalog counts are the GUDID device IDs that cite this 510(k). A system sold under several 510(k)s spreads its items across them.')
+      || case when is_new then jsonb_build_array('This clearance is ' || days_new || ' days old. GUDID listings, establishment registrations and the 510(k) summary often appear weeks or months after FDA clears a device.') else '[]'::jsonb end);
 end $$;
 
 create or replace function pc_vendor_signals(v text, m text default 'pit')
@@ -805,7 +858,7 @@ begin
              case when trend in ('Fewer recent clearances', 'No recent clearances') then 'Which product lines are you no longer developing, and how long will you support implants and instruments for them?' end));
   cards := jsonb_set(cards, '{2,asks}', pc_asks(cards->2->>'ask'));
   cards := jsonb_set(cards, '{3,asks}', pc_asks(cards->3->>'ask',
-             'What hourly rate do you pay surgeon consultants, and how is it set?',
+             'How do you set surgeon consulting rates, and will you disclose relationships with our surgeons under our conflict-of-interest policy?',
              case when coalesce(tot, 0) > 0 then 'Explain the ' || pc_money(tot) || ' in ' || latest || ' payments: how much was royalties, consulting, education, travel and meals?' end));
   cards := jsonb_set(cards, '{4,asks}', pc_asks(cards->4->>'ask',
              case when coalesce(n_nct, 0) > 0 then n_nct || ' of your funded studies have ClinicalTrials.gov numbers. Which have results posted, and can you share any that are not yet published?' end));
@@ -905,7 +958,7 @@ begin
     select min(medicare_pays), max(medicare_pays) into drg_min, drg_max from pc_procedure_drg where family_id = top_fam;
     select data_year into data_yr from pc_procedures where family_id = top_fam;
     c_med := pc_card('medicare', 'What does Medicare pay for procedures that use their products?',
-      case when top_fam is null then 'No procedure match' else pc_pay_range(drg_min, drg_max, true) || ' per case' end,
+      case when top_fam is null then 'No procedure match' else pc_pay_range(drg_min, drg_max, true) || ' per inpatient case' end,
       'info',
       case when top_fam is null then 'NOT FOUND: none of this company''s product codes is mapped to a Medicare procedure family.'
            else 'Its products map to ' || n_fam || ' Medicare procedure famil' || case when n_fam = 1 then 'y' else 'ies' end

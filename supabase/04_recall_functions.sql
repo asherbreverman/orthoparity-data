@@ -73,7 +73,7 @@ begin
     case when n_own > 0 then 'attention' else 'info' end,
     case when n_own > 0 then 'FDA lists ' || n_own || ' recall event' || case when n_own = 1 then '' else 's' end || ' naming this 510(k)'
                              || ', the latest in ' || to_char(latest, 'Mon YYYY') || ' (' || cls || ')'
-                             || case when open_n > 0 then '; ' || open_n || ' still listed as open by FDA' else '; none still open' end || '.'
+                             || case when open_n > 0 then '; ' || open_n || ' still listed as open by FDA, which keeps a recall open until it formally terminates it' else '; none still open' end || '.'
          else 'No FDA recall names this 510(k).' end
     || case when n_pred > 0 then ' Recalls name ' || n_pred || ' event' || case when n_pred = 1 then '' else 's' end || ' on its direct predicates.'
             when n_own = 0 then ' None name its direct predicates either.' else '' end
@@ -116,6 +116,7 @@ begin
          else n5 || ' recall event' || case when n5 = 1 then '' else 's' end || ' in the last five years'
               || case when c1 > 0 then ' (' || c1 || ' Class I)' else '' end
               || ', ' || n_all || ' since 2002; ' || open_n || ' still listed as open by FDA.'
+              || case when open_n > 0 then ' FDA lists a recall as open until it formally terminates it, so some open recalls are complete in practice.' else '' end
               || coalesce(' Most common recent cause in FDA''s records: ' || lower(cause) || '.', '') end,
     'Recall counts reflect product issues and how readily a company reports and corrects them, and larger portfolios usually have more. Read the reasons, not just the count.',
     'Which recalls affect products we use or are evaluating, and are all corrective actions complete?',
