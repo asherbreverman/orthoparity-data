@@ -320,6 +320,7 @@ def match_vendors(apps: dict, site: Path) -> tuple[dict, list, list]:
     names = load_csv(site / "pc_vendor_names.csv")
     exact = {}
     root = defaultdict(set)
+    seen_app = {(clean(r["raw_name"]).lower(), r["source"]) for r in names if r["source"] == "applicant"}
     for r in names:
         exact.setdefault(clean(r["raw_name"]).lower(), r["vendor_id"])
         rt = company_root(r["raw_name"])
@@ -348,9 +349,11 @@ def match_vendors(apps: dict, site: Path) -> tuple[dict, list, list]:
                                     "gudid_ortho_devices": 0, "gudid_brands": 0, "payment_kind": None, "rolls_up_to": vid}
         top = (vendors.get(vid) or new_vendors.get(vid) or {}).get("rolls_up_to") or vid
         out[a["number"]] = (top, how)
-        if app.lower() not in exact:
+        if (app.lower(), "applicant") not in seen_app:
+            # FDA's exact applicant spelling, so the owner card can tell the filer and today's owner are one company
             new_names.append({"vendor_id": vid, "source": "applicant", "raw_name": app, "basis": how})
-            exact[app.lower()] = vid
+            seen_app.add((app.lower(), "applicant"))
+            exact.setdefault(app.lower(), vid)
     return out, list(new_vendors.values()), new_names
 
 

@@ -831,6 +831,12 @@ begin
                  and l.relation ~* '(same company|renamed)') then
     own := own || jsonb_build_object('filer_vendor_id', own->>'owner_vendor_id');
   end if;
+  -- FDA's applicant spelling isn't on file as an applicant name (only as a GUDID labeler): same company when nothing
+  -- else says the line moved (Empirical Spine, Intrinsic Therapeutics)
+  if own->>'filer_vendor_id' is null and not coalesce((own->>'now_part_of')::boolean, false)
+     and not coalesce((own->>'divested')::boolean, false) then
+    own := own || jsonb_build_object('filer_vendor_id', own->>'owner_vendor_id');
+  end if;
   c_own := pc_card('owner', 'Who sells it today?',
     case when coalesce((own->>'divested')::boolean, false) or coalesce(own->>'owner_vendor_id', '') <> coalesce(own->>'filer_vendor_id', '')
          then 'Now ' || coalesce(own->>'owner_name', 'NOT FOUND') else 'Same company' end,
