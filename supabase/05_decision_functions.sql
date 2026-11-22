@@ -465,8 +465,8 @@ begin
     where p.product_code = code and p.decision_date > data_end - interval '5 years'),
   g as (
     select r.grp, count(*) as clearances,
-           (array_agg(r.knumber order by r.decision_date desc))[1] as latest_knumber,
-           (array_agg(r.device_name order by r.decision_date desc))[1] as latest_device,
+           (array_agg(r.knumber order by r.decision_date desc, r.knumber desc))[1] as latest_knumber,
+           (array_agg(r.device_name order by r.decision_date desc, r.knumber desc))[1] as latest_device,
            max(r.decision_date) as latest_date
     from recent r where r.grp is distinct from owner group by r.grp)
   select count(*),
@@ -507,7 +507,7 @@ begin
   -- 3. Financial ties (CMS Open Payments, payments naming this 510(k) or its brand)
   select sum(amount), sum(amount) filter (where nature_group = 'royalty'), sum(amount) filter (where nature_group = 'consulting'),
          min(year), max(year), sum(amount) filter (where tier = 1),
-         (array_agg(brand order by amount desc) filter (where tier = 2 and coalesce(brand, '') <> ''))[1]
+         (array_agg(brand order by amount desc, brand) filter (where tier = 2 and coalesce(brand, '') <> ''))[1]
     into tot, roy, cons, yr_min, yr_max, tot1, brand_name
     from pc_op_product where knumber = kn;
   -- a brand match covers every version sold under the brand, including ones cleared before this 510(k)
@@ -1141,7 +1141,7 @@ begin
 
   -- supply
   select count(*), count(*) filter (where devices > 0 and in_distribution = 0),
-         array_to_string((array_agg(brand order by devices desc) filter (where devices > 0 and in_distribution = 0))[1:5], ', '),
+         array_to_string((array_agg(brand order by devices desc, brand) filter (where devices > 0 and in_distribution = 0))[1:5], ', '),
          sum(devices)
     into n_brands, n_disc, disc_names, n_devs
     from pc_portfolio_brands where vendor_id in (select vendor_id from pc_vendor_family(v, md) where md = 'current' or vendor_id = v);
