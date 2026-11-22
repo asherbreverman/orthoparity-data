@@ -38,7 +38,7 @@ bioventus,Bioventus,Bioventus (public),Orthobiologics,^(bioventus),Legacy names 
 aesculap,Aesculap (B. Braun),B. Braun,Diversified,^aesculap,
 corin,Corin (incl. OMNIlife),Corin Group,Joint reconstruction,^(corin),Legacy names kept only where a public source confirms the ownership; see reference/ownership_sources.csv
 mtf,MTF Biologics,MTF (non-profit),Orthobiologics,^musculoskeletaltransplant,
-integra,Integra LifeSciences,Integra LifeSciences (public),Regenerative and neuro,^integra,Extremity orthopaedics business sold to Smith+Nephew 2021-01-04
+integra,Integra LifeSciences,Integra LifeSciences (public),Regenerative and neuro,^integra(?!ted),Extremity orthopaedics business sold to Smith+Nephew 2021-01-04
 n_pioneersurgicaltechnology,"Pioneer Surgical Technology, Inc.",,,^(pioneersurgicaltechnology|pioneersurgicaltechnologyinc|pioneersurgicaltechnologyincdbaexaltagroup|pioneersurgicaltechnologyincdbaresolvesurgicaltech|pioneersurgicaltechnologyincdbartisurgical|pioneersurgicaltechnologyincdbartisurgicalinc|pioneersurgicaltechnologyincrtisurgicali)$,One company filing under spelling or dba variants of its own name (merged)
 n_orthosoftzimmercas,Orthosoft Inc,,,^(orthosoftdbazimmercas|orthosoftinc|orthosoftincdbazimmercas)$,One company filing under spelling or dba variants of its own name (merged)
 n_vertiflex,"Vertiflex, Inc.",,,^(vertiflexinc|vertiflextmincorporated)$,One company filing under spelling or dba variants of its own name (merged)
@@ -94,3 +94,4 @@ n_solcobiomedical,Solco Biomedical,,,^(solcobiomedicalcoltd|solcobiomedicalcompa
 n_spectrumspine,Spectrum Spine,,,^(spectrumspine|spectrumspineinc|spectrumspineipholdingsllc|spectrumspinellc)$,"One company filing under spelling, dba or subsidiary variants of its own name (merged). Spectrum Spine IP Holdings is Spectrum Spine's IP holding entity"
 n_spinesmithpartners,SpineSmith,,,^(spinesmithholdingsllc|spinesmithpartnersllp|spinesmithpartnerslp)$,"One company filing under spelling, dba or subsidiary variants of its own name (merged). SpineSmith Partners and SpineSmith Holdings file the same IN:C2 line"
 n_orthosolutions,Ortho Solutions,,,^(orthosolutionsholdingslimited|orthosolutionsinc|orthosolutionslimited|orthosolutionsuklimited|orthosolutionsukltd)$,"One company filing under spelling, dba or subsidiary variants of its own name (merged). Ortho Solutions UK Limited is the same Ortho Solutions group"
+n_glw,GLW Medical,,,^glw(medical|medicalinnovation)?$,"One company: all three FDA applicant names share 300 Sylvan Ave., Englewood Cliffs, NJ (openFDA K201379, K213005, K200343)"

@@ -77,8 +77,9 @@ begin
          else 'No FDA recall names this 510(k).' end
     || case when n_pred > 0 then ' Recalls name ' || n_pred || ' event' || case when n_pred = 1 then '' else 's' end || ' on its direct predicates.'
             when n_own = 0 then ' None name its direct predicates either.' else '' end
-    || coalesce(' Across this product code, ' || (cat->>'events_last5') || ' recall events in the last five years involved '
-                || (cat->>'companies_last5') || ' companies.', ''),
+    || case when coalesce((cat->>'events_last5')::int, 0) = 0 then ' No recalls in this product code in the last five years.'
+            else ' Across this product code, ' || (cat->>'events_last5') || ' recall events in the last five years involved '
+                 || (cat->>'companies_last5') || ' companies.' end,
     case when n_own > 0 then 'Recalls show what went wrong and how the company responded. Most orthopedic recalls are Class II, and many cover labeling or specific lots.'
          else 'A clean record helps, though newer devices have had less time on the market. FDA records start in 2002.' end,
     case when n_own > 1 then 'What caused the ' || n_own || ' recalls, are the corrections complete, and are any affected lots in our inventory?'
@@ -115,7 +116,8 @@ begin
     case when n_all = 0 then 'No FDA recalls linked to this vendor since 2002.'
          else n5 || ' recall event' || case when n5 = 1 then '' else 's' end || ' in the last five years'
               || case when c1 > 0 then ' (' || c1 || ' Class I)' else '' end
-              || ', ' || n_all || ' since 2002; ' || open_n || ' still listed as open by FDA.'
+              || ', ' || n_all || ' since 2002; ' || open_n || ' still listed as open by FDA'
+              || case when open_n > n5 then ', including older recalls' else '' end || '.'
               || case when open_n > 0 then ' FDA lists a recall as open until it formally terminates it, so some open recalls are complete in practice.' else '' end
               || coalesce(' Most common recent cause in FDA''s records: ' || lower(cause) || '.', '') end,
     'Recall counts reflect product issues and how readily a company reports and corrects them, and larger portfolios usually have more. Read the reasons, not just the count.',

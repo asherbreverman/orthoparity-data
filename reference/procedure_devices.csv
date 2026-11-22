@@ -163,3 +163,10 @@ foot_soft_tissue,implant,MBI,reviewed,checked 2026-11-19 against public manufact
 foot_soft_tissue,implant,MAI,reviewed,checked 2026-11-19 against public manufacturer coding guides and the CMS MS-DRG v41.1 manual; sources in reviews/Procedure_Families_Added_REVIEW.xlsx
 foot_soft_tissue,implant,OWY,reviewed,checked 2026-11-19 against public manufacturer coding guides and the CMS MS-DRG v41.1 manual; sources in reviews/Procedure_Families_Added_REVIEW.xlsx
 debridement_biopsy_amputation,biologic,QRR,reviewed,added 2026-11-19; CMS MS-DRG v44 (FY2027) names antibiotic-eluting bone void filler in DRGs 474 and 477; sources in reviews/Procedure_Families_Added_REVIEW.xlsx
+thoracolumbar_fusion,implant,OUR,reviewed,checked 2026-11-21 (Phase 2); CMS MS-DRG v42: sacroiliac joint fusion (0SG7/0SG8) groups to 459/460
+thoracolumbar_fusion,instrument,SCY,reviewed,checked 2026-11-21 (Phase 2); CMS MS-DRG v42: sacroiliac joint fusion groups to 459/460
+thoracolumbar_fusion,instrument,QSR,reviewed,checked 2026-11-21 (Phase 2); CMS MS-DRG v42: sacroiliac joint fusion groups to 459/460
+shoulder_elbow_replacement,implant,KWI,reviewed,checked 2026-11-21 (Phase 2); CMS MS-DRG v33 and v44: radial head replacement (0RRL/0RRM) groups to 483
+shoulder_elbow_replacement,instrument,QHE,reviewed,checked 2026-11-21 (Phase 2); shoulder arthroplasty implantation system; shoulder replacement groups to 483
+hip_knee_replacement,implant,HSN,reviewed,checked 2026-11-21 (Phase 2); CMS MS-DRG v41.1: DRG 469/470 title includes total ankle replacement
+hip_knee_replacement,instrument,OYK,reviewed,checked 2026-11-21 (Phase 2); CMS MS-DRG v41.1: DRG 469/470 title includes total ankle replacement

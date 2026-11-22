@@ -43,8 +43,14 @@ def squash(name: str | None) -> str:
 
 
 def name_key(name: str | None) -> str:
-    words = [w for w in re.findall(r"[a-z0-9]+", (name or "").lower().replace("+", " "))
-             if w not in CO_SUFFIX and w not in EXTRA_GENERIC and len(w) > 1]
+    raw = [w for w in re.findall(r"[a-z0-9]+", (name or "").lower().replace("+", " "))
+           if w not in CO_SUFFIX and w not in EXTRA_GENERIC]
+    words = [w for w in raw if len(w) > 1]
+    # Phase 2: "L&K Biomed", "N Spine", "A.M. Surgical" lost their letters and collapsed into one generic
+    # key (n_biomed, n_spine, n_surgical), merging unrelated companies. Keep the letters when the rest is
+    # only generic words. Names with a distinctive word keep their old key, so existing vendor ids don't move.
+    if len(raw) > len(words) and all(w in GENERIC_WORDS or w == "biomed" for w in words):
+        words = raw
     return "".join(words) or squash(name)
 
 
