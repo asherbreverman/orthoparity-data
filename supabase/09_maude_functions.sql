@@ -87,3 +87,6 @@ returns jsonb language sql stable as $$
 $$;
 
 grant execute on function pc_maude_notes(), pc_device_maude(text), pc_vendor_maude(text, text, int) to anon, authenticated;
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

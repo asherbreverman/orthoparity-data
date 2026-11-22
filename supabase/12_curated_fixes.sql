@@ -106,6 +106,14 @@ select pg_temp.op_rename('n_instruments', 'H&H Instruments', '^h\s*&\s*h\s+instr
 select pg_temp.op_split('integra', 'n_integratedsurgicalsystems', 'Integrated Surgical Systems, Inc.', '^integrated\s+surgical');
 select pg_temp.op_split('integra', 'n_integratedendoscopy',       'Integrated Endoscopy, Inc.',        '^integrated\s+endoscopy');
 
+-- Phase 4: Kyocera. One record holds the Japanese parent (Kyocera Corporation, and Kyocera Medical Corporation,
+-- which merged into it on April 1, 2017: Kyocera Form 20-F FY2017) and its U.S. subsidiary Kyocera Medical
+-- Technologies, Inc. (formed March 2019 with the Renovis assets: Kyocera release 2019-01-16). Its name read
+-- "Kyocera Medical, Inc.", which no filing uses, so pages said "Kyocera Medical Technologies, now part of Kyocera
+-- Medical, Inc." Name the record for the group instead, and drop the Phase 2 "wholly owned by Kyocera Corporation"
+-- lineage row, which would now read "Kyocera, now part of Kyocera". The parent line still names Kyocera Corporation.
+update pc_vendors set display_name = 'Kyocera' where vendor_id = 'n_kyoceramedicaltechnologies';
+
 -- ---------------------------------------------------------------------------------------------
 -- B. Same company under spelling variants, and subsidiaries rolled into their parent
 -- ---------------------------------------------------------------------------------------------
@@ -238,9 +246,6 @@ insert into pc_vendor_lineage (vendor_id, parent, relation, valid_from, valid_to
  ('n_arthrosurface', 'Phoenix Brio, Inc.', 'acquired by', '2024-10-31', null,
   'https://www.sec.gov/Archives/edgar/data/898437/000117184326001275/anik20251231_10k.htm',
   'Phase 2: Anika sold Arthrosurface to Phoenix Brio, Inc. (Anika FY2025 10-K)', true),
- ('n_kyoceramedicaltechnologies', 'Kyocera Corporation', 'wholly owned by', null, null,
-  'https://www.orthoworld.com/kyocera-to-expand-u-s-business-with-purchase-of-renovis-surgical',
-  'Phase 2: Kyocera Medical Technologies is a wholly owned Kyocera subsidiary formed in March 2019 with the Renovis assets', true),
  ('n_choicespine', 'n_zavationmedicalproducts', 'acquired by', '2026-02-26', null,
   'https://orthotw.com/2026/02/zavation-acquires-choicespine-names-derek-kuyper-ceo-of-combined-company',
   'Phase 2: Zavation acquired Choice Spine Holdings, Inc. (press release Feb 26, 2026)', true),
@@ -357,6 +362,76 @@ select m.family_id, m.role, c.product_code, c.plain_name, c.fda_name,
  where not exists (select 1 from pc_procedure_devices x where x.family_id = m.family_id and x.product_code = m.code);
 
 -- ---------------------------------------------------------------------------------------------
+-- F3. Phase 4: more device links for the hip and knee families, and the official CY 2024 outpatient status of
+--     key procedure codes. Links: candidates flagged by an AI crosswalk (Gemini), each checked against the CMS
+--     MS-DRG v41/v41.1 code-combination lists (removal of a hip or knee joint device with a new replacement groups
+--     to DRG 466-468; DRG 521-522 is hip replacement for hip fracture; DRG 469-470 is major hip and knee
+--     replacement) and approved in reviews/../Procedure_Links_Phase4 (Nov 22). Outpatient: CMS CY 2024 OPPS final
+--     rule Addenda B and E (status J1 = paid outpatient through the listed APC; C = inpatient only).
+-- ---------------------------------------------------------------------------------------------
+insert into pc_procedure_devices (family_id, role, product_code, plain_name, fda_name, clearances_all, clearances_recent, active_vendors, status)
+select m.family_id, m.role, c.product_code, c.plain_name, c.fda_name,
+       (select count(*) from pc_devices d where d.product_code = c.product_code),
+       (select count(*) from pc_devices d where d.product_code = c.product_code and d.decision_date::date >= current_date - interval '5 years'),
+       (select count(distinct p.vendor_id) from pc_portfolio_510k p where p.product_code = c.product_code and p.decision_date::date >= current_date - interval '5 years'),
+       'reviewed'
+  from (values
+  ('revision_hip_knee', 'implant', 'JDG'),
+  ('revision_hip_knee', 'implant', 'JDL'),
+  ('revision_hip_knee', 'implant', 'KMC'),
+  ('revision_hip_knee', 'implant', 'KWA'),
+  ('revision_hip_knee', 'implant', 'LWJ'),
+  ('revision_hip_knee', 'implant', 'LZO'),
+  ('revision_hip_knee', 'implant', 'MAY'),
+  ('revision_hip_knee', 'implant', 'MBL'),
+  ('revision_hip_knee', 'implant', 'MEH'),
+  ('revision_hip_knee', 'implant', 'OQG'),
+  ('revision_hip_knee', 'implant', 'OQI'),
+  ('revision_hip_knee', 'cement and accessories', 'JDK'),
+  ('revision_hip_knee', 'cement and accessories', 'LZN'),
+  ('revision_hip_knee', 'implant', 'HRY'),
+  ('revision_hip_knee', 'implant', 'HSX'),
+  ('revision_hip_knee', 'implant', 'KYK'),
+  ('revision_hip_knee', 'implant', 'LGE'),
+  ('revision_hip_knee', 'implant', 'MBH'),
+  ('revision_hip_knee', 'implant', 'MBV'),
+  ('revision_hip_knee', 'implant', 'OIY'),
+  ('revision_hip_knee', 'implant', 'HTG'),
+  ('hip_fracture_replacement', 'implant', 'JDL'),
+  ('hip_fracture_replacement', 'implant', 'KMC'),
+  ('hip_fracture_replacement', 'implant', 'MAY'),
+  ('hip_fracture_replacement', 'implant', 'MBL'),
+  ('hip_fracture_replacement', 'implant', 'OQG'),
+  ('hip_fracture_replacement', 'implant', 'OQI'),
+  ('hip_fracture_replacement', 'cement and accessories', 'MBB'),
+  ('hip_knee_replacement', 'implant', 'KRO'),
+  ('hip_knee_replacement', 'instrument', 'OOG')
+  ) m(family_id, role, code)
+  join pc_product_codes c on c.product_code = m.code
+ where not exists (select 1 from pc_procedure_devices x where x.family_id = m.family_id and x.product_code = m.code);
+
+update pc_procedure_outpatient o set
+  outpatient_status = x.status, apc = x.apc, source = x.src, source_url = x.url,
+  apc_services = a.services, apc_medicare_pays = a.medicare_pays, apc_patient_other_pays = a.patient_other_pays,
+  apc_total_allowed = a.total_allowed
+from (values
+  ('hip_knee_replacement', '27447', 'Outpatient allowed', '5115', 'CMS CY 2024 OPPS final rule, Addendum B (Nov 2023): status J1, APC 5115', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('hip_knee_replacement', '27130', 'Outpatient allowed', '5115', 'CMS CY 2024 OPPS final rule, Addendum B (Nov 2023): status J1, APC 5115', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('shoulder_elbow_replacement', '23472', 'Outpatient allowed', '5116', 'CMS CY 2024 OPPS final rule, Addendum B (Nov 2023): status J1, APC 5116', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('hip_femur_fixation', '27245', 'Inpatient only', null, 'CMS CY 2024 OPPS final rule, Addenda B and E (Nov 2023): status C (inpatient only)', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('hip_femur_fixation', '27244', 'Inpatient only', null, 'CMS CY 2024 OPPS final rule, Addenda B and E (Nov 2023): status C (inpatient only)', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('hip_fracture_replacement', '27236', 'Inpatient only', null, 'CMS CY 2024 OPPS final rule, Addenda B and E (Nov 2023): status C (inpatient only)', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('thoracolumbar_fusion', '22630', 'Outpatient allowed', '5116', 'CMS CY 2024 OPPS final rule, Addendum B (Nov 2023): status J1, APC 5116', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('thoracolumbar_fusion', '22612', 'Outpatient allowed', '5116', 'CMS CY 2024 OPPS final rule, Addendum B (Nov 2023): status J1, APC 5116', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('thoracolumbar_fusion', '22633', 'Outpatient allowed', '5116', 'CMS CY 2024 OPPS final rule, Addendum B (Nov 2023): status J1, APC 5116', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('cervical_fusion', '22551', 'Outpatient allowed', '5115', 'CMS CY 2024 OPPS final rule, Addendum B (Nov 2023): status J1, APC 5115', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('revision_hip_knee', '27134 / 27487', 'Inpatient only', null, 'CMS CY 2024 OPPS final rule, Addenda B and E (Nov 2023): status C (inpatient only) for both codes', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip'),
+  ('lower_extremity_humerus', 'various', 'Mixed', null, 'CMS CY 2024 OPPS final rule, Addendum B (Nov 2023): mixed. Examples: ankle fracture fixation 27814, 27822, 27823 J1 APC 5114; tibial shaft 27758, 27759 and humerus 23615, 24515, 24516 J1 APC 5115; tibial plateau 27535, 27536 C (inpatient only)', 'https://www.cms.gov/license/ama?file=/files/zip/2024-nfrm-opps-addenda.zip')
+) x(family_id, cpt, status, apc, src, url)
+left join pc_procedure_apc a on a.apc = x.apc
+where o.family_id = x.family_id and o.cpt = x.cpt;
+
+-- ---------------------------------------------------------------------------------------------
 -- F2. Phase 3: company names title-cased from FDA's ALL CAPS lost their acronyms ("Tdm Co., Ltd.", "Gbs Commonwealth",
 --     "Kfx Medical"). A 2-4 letter word with no vowel is an acronym, except a few abbreviations. Same rule as pc_acr in 05.
 -- ---------------------------------------------------------------------------------------------
@@ -401,3 +476,6 @@ update pc_vendors set payment_kind = 'no payments'
  where payment_kind is null and vendor_id in (select vendor_id from pc_vendors where note like 'Split from %');
 
 commit;
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

@@ -4,6 +4,16 @@
 -- Facts only. Nothing here scores or grades a company. A site, an inspection result or a warning letter is a
 -- public FDA record; the page shows what it says and links to the source.
 
+-- Page cache (Phase 4). The heavy page functions below keep a copy of each answer in pc_cache, so a repeat visit
+-- reads one row instead of recomputing. Every SQL file in this folder empties the cache when it finishes, and so
+-- does 07_after_import.sql, so the cache never outlives the data or the rules that made it. It holds at most 8,000 answers (about
+-- 100 MB) to stay well inside the Supabase Free plan's 500 MB; past that, pages still work, just uncached.
+create table if not exists pc_cache (
+  fn text not null, arg text not null, payload jsonb not null, made timestamptz not null default now(),
+  primary key (fn, arg));
+alter table pc_cache enable row level security;
+revoke all on pc_cache from anon, authenticated;
+
 create or replace function pc_supplier_notes() returns jsonb language sql immutable as $$
   select jsonb_build_array(
     'Sites come from FDA establishment registration and listing, current registrations only. A site counts when it lists at least one of the company''s 510(k)s.',
@@ -15,7 +25,7 @@ create or replace function pc_supplier_notes() returns jsonb language sql immuta
   );
 $$;
 
-create or replace function pc_vendor_supplier(v text, m text default 'current') returns jsonb
+create or replace function pc_vendor_supplier_live(v text, m text default 'current') returns jsonb
 language sql stable as $$
   with fam as (
     select p.knumber from pc_portfolio_510k p
@@ -121,7 +131,7 @@ language sql stable as $$
 $$;
 
 grant execute on function pc_supplier_notes() to anon, authenticated;
-grant execute on function pc_vendor_supplier(text, text) to anon, authenticated;
+grant execute on function pc_vendor_supplier_live(text, text) to anon, authenticated;
 
 -- Product page: the registered sites that list this 510(k), with their device inspections and warning letters.
 create or replace function pc_device_supplier(k text) returns jsonb language sql stable as $$
@@ -174,3 +184,25 @@ create or replace function pc_device_supplier(k text) returns jsonb language sql
 $$;
 
 grant execute on function pc_device_supplier(text) to anon, authenticated;
+
+-- pc_vendor_supplier: cached front door for pc_vendor_supplier_live (same name and arguments the website already calls).
+create or replace function pc_vendor_supplier(v text, m text default 'current')
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare r jsonb; ck text := coalesce(v, '') || '|' || coalesce(m, 'current');
+begin
+  select c.payload into r from pc_cache c where c.fn = 'pc_vendor_supplier' and c.arg = ck;
+  if found then return r; end if;
+  r := pc_vendor_supplier_live(v, m);
+  if r is not null and (select count(*) from pc_cache) < 8000 and exists (select 1 from pc_vendors x where x.vendor_id = v) then
+    begin
+      insert into pc_cache (fn, arg, payload) values ('pc_vendor_supplier', ck, r) on conflict do nothing;
+    exception when others then null;  -- read-only call or a race: skip the save, still answer
+    end;
+  end if;
+  return r;
+end $$;
+revoke execute on function pc_vendor_supplier_live(text, text) from public, anon, authenticated;
+grant execute on function pc_vendor_supplier(text, text) to anon, authenticated;
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

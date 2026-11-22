@@ -135,3 +135,6 @@ end $$;
 
 grant execute on function pc_recall_event_rows(text[], int), pc_device_recalls(text), pc_vendor_recalls(text, text, int),
   pc_recall_card_product(text, text), pc_recall_card_vendor(text, text) to anon, authenticated;
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

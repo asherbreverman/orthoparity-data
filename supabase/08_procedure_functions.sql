@@ -215,3 +215,6 @@ grant execute on function pc_procedure_notes(), pc_procedure_worksheet(), pc_cod
   pc_procedure(text, int), pc_code_procedures(text), pc_device_procedures(text), pc_vendor_procedures(text, text)
   to anon, authenticated;
 notify pgrst, 'reload schema';
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

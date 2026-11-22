@@ -2,6 +2,16 @@
 -- Part of the OrthoParity data pipeline (MIT License). Run the files in this folder in number order in the
 -- Supabase SQL Editor (or psql). Every file is safe to run again. See supabase/README.md.
 
+-- Page cache (Phase 4). The heavy page functions below keep a copy of each answer in pc_cache, so a repeat visit
+-- reads one row instead of recomputing. Every SQL file in this folder empties the cache when it finishes, and so
+-- does 07_after_import.sql, so the cache never outlives the data or the rules that made it. It holds at most 8,000 answers (about
+-- 100 MB) to stay well inside the Supabase Free plan's 500 MB; past that, pages still work, just uncached.
+create table if not exists pc_cache (
+  fn text not null, arg text not null, payload jsonb not null, made timestamptz not null default now(),
+  primary key (fn, arg));
+alter table pc_cache enable row level security;
+revoke all on pc_cache from anon, authenticated;
+
 -- Benchmark a vendor always means the parent company (current owner, with every acquired or merged company's
 -- history). The m argument stays for older callers and is ignored.
 create or replace function pc_mode(m text) returns text language sql immutable as
@@ -141,7 +151,7 @@ returns jsonb language sql stable as $$
     order by p.decision_date desc limit lim) r
 $$;
 
-create or replace function pc_vendor_brief(v text, m text default 'pit')
+create or replace function pc_vendor_brief_live(v text, m text default 'pit')
 returns jsonb language plpgsql stable as $$
 declare
   md text := pc_mode(m);
@@ -419,5 +429,27 @@ $$;
 grant execute on function pc_vendor_parent(text), pc_vendor_step(text), pc_vendor_resolve(text), pc_device_owner(text),
   pc_vendor_coverage() to anon, authenticated;
 grant execute on function pc_mode(text), pc_vendor_family(text, text), pc_vendor_search(text, int),
-  pc_vendor_portfolio(text, text, text, text, text, int), pc_vendor_brief(text, text), pc_vendor_compare(text, text, text),
+  pc_vendor_portfolio(text, text, text, text, text, int), pc_vendor_brief_live(text, text), pc_vendor_compare(text, text, text),
   pc_product_payments(text) to anon, authenticated;
+
+-- pc_vendor_brief: cached front door for pc_vendor_brief_live (same name and arguments the website already calls).
+create or replace function pc_vendor_brief(v text, m text default 'pit')
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare r jsonb; ck text := coalesce(v, '') || '|' || coalesce(m, 'pit');
+begin
+  select c.payload into r from pc_cache c where c.fn = 'pc_vendor_brief' and c.arg = ck;
+  if found then return r; end if;
+  r := pc_vendor_brief_live(v, m);
+  if r is not null and (select count(*) from pc_cache) < 8000 and exists (select 1 from pc_vendors x where x.vendor_id = v) then
+    begin
+      insert into pc_cache (fn, arg, payload) values ('pc_vendor_brief', ck, r) on conflict do nothing;
+    exception when others then null;  -- read-only call or a race: skip the save, still answer
+    end;
+  end if;
+  return r;
+end $$;
+revoke execute on function pc_vendor_brief_live(text, text) from public, anon, authenticated;
+grant execute on function pc_vendor_brief(text, text) to anon, authenticated;
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

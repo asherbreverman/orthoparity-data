@@ -4,6 +4,16 @@
 -- Turns the data behind each product and vendor page into a short list of signals, each with a finding, why it
 -- matters and what to ask. Fixed rules only: same input, same output.
 
+-- Page cache (Phase 4). The heavy page functions below keep a copy of each answer in pc_cache, so a repeat visit
+-- reads one row instead of recomputing. Every SQL file in this folder empties the cache when it finishes, and so
+-- does 07_after_import.sql, so the cache never outlives the data or the rules that made it. It holds at most 8,000 answers (about
+-- 100 MB) to stay well inside the Supabase Free plan's 500 MB; past that, pages still work, just uncached.
+create table if not exists pc_cache (
+  fn text not null, arg text not null, payload jsonb not null, made timestamptz not null default now(),
+  primary key (fn, arg));
+alter table pc_cache enable row level security;
+revoke all on pc_cache from anon, authenticated;
+
 create or replace function pc_money(x double precision) returns text language sql immutable as $$
   select case when x is null then null
               when abs(x) >= 1e9 then '$' || trim(to_char(x / 1e9, 'FM999990.0')) || 'B'
@@ -323,7 +333,7 @@ create or replace function pc_family_score(fam text, dtext text) returns int lan
                                           when dtext ~ '(spin|vertebr|facet)' then 1 else 0 end
     when 'spine_surgery_no_fusion' then case when dtext ~ '(lamin|decompress|interspinous|spinous process|stenosis|disc replacement|disc prosthes|motion preserv)' then 3 else 0 end
     when 'hip_knee_replacement' then case when dtext ~ '(knee|\mtka\M|\mtha\M|\muka\M|acetab|tibial (tray|insert|base|component)|patell|unicompart|femoral component|total hip|hip (system|stem|prosthes|replacement|arthroplasty|cup)|\mhip\M)' then 3 else 0 end
-    when 'revision_hip_knee' then case when dtext ~ '(revision|augment|\mcone\M|sleeve|hinge|constrained)' then 4 else 0 end
+    when 'revision_hip_knee' then case when dtext ~ '(revision|augment|\mcone\M|sleeve|hinge|(?<!semi-)(?<!semi )(?<!non-)(?<!non )(?<!un)constrained)' then 4 else 0 end
     when 'hip_fracture_replacement' then case when dtext ~ '(hemiarthroplasty|bipolar|unipolar|endoprosthes)' then 4 else 0 end
     when 'hip_femur_fixation' then case when dtext ~ '(femur|femoral nail|trochant|hip fracture|hip screw|proximal femoral|cephalomedullary|femoral neck|hip pin)' then 4 else 0 end
     when 'lower_extremity_humerus' then case when dtext ~ '(tibia|tibial nail|humer|fibula|pilon|plateau|external fix|fixator|ring fix|hexapod)' then 3 else 0 end
@@ -345,7 +355,7 @@ create or replace function pc_family_conflict(fams text[], dtext text) returns t
               then 'spine surgery' end
 $$;
 
-create or replace function pc_signals(k text)
+create or replace function pc_signals_live(k text)
 returns jsonb language plpgsql stable as $$
 declare
   kn text := upper(regexp_replace(coalesce(k, ''), '[\s\-]', '', 'g'));
@@ -1031,7 +1041,7 @@ begin
       || case when is_new then jsonb_build_array('This clearance is ' || days_new || ' days old. GUDID listings, establishment registrations and the 510(k) summary often appear weeks or months after FDA clears a device.') else '[]'::jsonb end);
 end $$;
 
-create or replace function pc_vendor_signals(v text, m text default 'pit')
+create or replace function pc_vendor_signals_live(v text, m text default 'pit')
 returns jsonb language plpgsql stable as $$
 declare
   md text := pc_mode(m);
@@ -1215,15 +1225,20 @@ begin
       'Which studies cover the products you are proposing, and when will results be published?',
       'research'),
     pc_card('supply', 'Is the portfolio in distribution?',
-      case when coalesce(n_disc, 0) > 0 then n_disc || ' brand' || case when n_disc = 1 then '' else 's' end || ' discontinued' else 'All in distribution' end,
+      case when coalesce(n_brands, 0) = 0 then 'No GUDID brands'
+           when coalesce(n_disc, 0) > 0 then n_disc || ' brand' || case when n_disc = 1 then '' else 's' end || ' discontinued' else 'All in distribution' end,
       case when coalesce(n_disc, 0) > 0 then 'attention' else 'info' end,
-      case when coalesce(n_disc, 0) > 0 then pc_num(n_disc) || ' of ' || pc_num(n_brands) || ' orthopedic brands in GUDID list no devices in commercial distribution'
+      case when coalesce(n_brands, 0) = 0 then 'NOT FOUND: no orthopedic brand under this company appears in FDA''s device identifier database (GUDID), '
+                                              || 'so its distribution status is unknown. GUDID started in 2014; products sold only before then, or sold under '
+                                              || 'another company''s label, have no GUDID record.'
+           when coalesce(n_disc, 0) > 0 then pc_num(n_disc) || ' of ' || pc_num(n_brands) || ' orthopedic brands in GUDID list no devices in commercial distribution'
                                               || coalesce(' (' || disc_names || ')', '') || '.'
            else 'Every orthopedic brand in GUDID lists devices in commercial distribution.' end
         || case when cat_brands then ' This company fills GUDID''s brand field with catalog descriptions (sizes, sides, trials), so '
                   || pc_num(n_brands) || ' brand entries cover ' || pc_num(n_devs) || ' devices and overstate its product lines.' else '' end,
       'Discontinued lines can strand instrument sets and leave revision patients without parts.',
-      'Is every line you are proposing in full distribution, and what is your end-of-life policy for revision parts?',
+      case when coalesce(n_brands, 0) = 0 then 'Which of your cleared products are you still selling, under what brand names, and who supports revisions of older ones?'
+           else 'Is every line you are proposing in full distribution, and what is your end-of-life policy for revision parts?' end,
       'brands'));
   cards := jsonb_set(cards, '{0,headline}', to_jsonb(coalesce(n_codes, 0) || ' product code' || case when n_codes = 1 then '.' else 's.' end));
   cards := jsonb_set(cards, '{1,headline}', to_jsonb(coalesce(v_last5, 0) || ' clearance' || case when v_last5 = 1 then '' else 's' end || ' in five years.'));
@@ -1494,5 +1509,46 @@ begin
 end $$;
 
 grant execute on function pc_fig(text, text), pc_num(numeric), pc_figs(jsonb[]), pc_money(double precision), pc_data_end(), pc_card(text, text, text, text, text, text, text, text),
-  pc_signals(text), pc_vendor_signals(text, text), pc_tc(text), pc_initcap(text), pc_fix_text(text), pc_fix_card(jsonb), pc_same_name(text, text),
+  pc_signals_live(text), pc_vendor_signals_live(text, text), pc_tc(text), pc_initcap(text), pc_fix_text(text), pc_fix_card(jsonb), pc_same_name(text, text),
   pc_clean_ifu(text), pc_family_score(text, text), pc_family_conflict(text[], text) to anon, authenticated;
+
+-- pc_signals: cached front door for pc_signals_live (same name and arguments the website already calls).
+create or replace function pc_signals(k text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare r jsonb; ck text := coalesce(k, '');
+begin
+  select c.payload into r from pc_cache c where c.fn = 'pc_signals' and c.arg = ck;
+  if found then return r; end if;
+  r := pc_signals_live(k);
+  if r is not null and (select count(*) from pc_cache) < 8000 and exists (select 1 from pc_devices d where d.knumber = upper(regexp_replace(coalesce(k, ''), '[\s\-]', '', 'g'))) then
+    begin
+      insert into pc_cache (fn, arg, payload) values ('pc_signals', ck, r) on conflict do nothing;
+    exception when others then null;  -- read-only call or a race: skip the save, still answer
+    end;
+  end if;
+  return r;
+end $$;
+revoke execute on function pc_signals_live(text) from public, anon, authenticated;
+grant execute on function pc_signals(text) to anon, authenticated;
+
+-- pc_vendor_signals: cached front door for pc_vendor_signals_live (same name and arguments the website already calls).
+create or replace function pc_vendor_signals(v text, m text default 'pit')
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare r jsonb; ck text := coalesce(v, '') || '|' || coalesce(m, 'pit');
+begin
+  select c.payload into r from pc_cache c where c.fn = 'pc_vendor_signals' and c.arg = ck;
+  if found then return r; end if;
+  r := pc_vendor_signals_live(v, m);
+  if r is not null and (select count(*) from pc_cache) < 8000 and exists (select 1 from pc_vendors x where x.vendor_id = v) then
+    begin
+      insert into pc_cache (fn, arg, payload) values ('pc_vendor_signals', ck, r) on conflict do nothing;
+    exception when others then null;  -- read-only call or a race: skip the save, still answer
+    end;
+  end if;
+  return r;
+end $$;
+revoke execute on function pc_vendor_signals_live(text, text) from public, anon, authenticated;
+grant execute on function pc_vendor_signals(text, text) to anon, authenticated;
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

@@ -8,6 +8,9 @@ select pc_clean_blanks();
 -- Mark which research payments are in orthopedic scope.
 select pc_refresh_research_scope();
 
+-- Empty the page cache (Phase 4) so no page shows answers made from the old data.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;
+
 -- Row counts, to compare with outputs/site_data (one row per table).
 select 'pc_devices' as table_name, count(*) as rows from pc_devices
 union all select 'pc_edges', count(*) from pc_edges

@@ -2,6 +2,16 @@
 -- Part of the OrthoParity data pipeline (MIT License). Run the files in this folder in number order in the
 -- Supabase SQL Editor (or psql). Every file is safe to run again. See supabase/README.md.
 
+-- Page cache (Phase 4). The heavy page functions below keep a copy of each answer in pc_cache, so a repeat visit
+-- reads one row instead of recomputing. Every SQL file in this folder empties the cache when it finishes, and so
+-- does 07_after_import.sql, so the cache never outlives the data or the rules that made it. It holds at most 8,000 answers (about
+-- 100 MB) to stay well inside the Supabase Free plan's 500 MB; past that, pages still work, just uncached.
+create table if not exists pc_cache (
+  fn text not null, arg text not null, payload jsonb not null, made timestamptz not null default now(),
+  primary key (fn, arg));
+alter table pc_cache enable row level security;
+revoke all on pc_cache from anon, authenticated;
+
 -- K-number: exact match on any device. Otherwise every word must appear in the device name or applicant
 -- (orthopedic starting set only), newest first. If that finds fewer than 5, close spellings are added.
 create or replace function pc_search(q text, lim int default 50)
@@ -325,7 +335,7 @@ end
 $$;
 
 -- Includes the standard value analysis committee questions (key: vac_questions).
-create or replace function pc_brief(k text)
+create or replace function pc_brief_live(k text)
 returns jsonb
 language plpgsql stable
 as $$
@@ -589,6 +599,28 @@ as $$
 $$;
 
 grant execute on function pc_search(text, int), pc_brand_family(text), pc_lookup(text[], int) to anon, authenticated;
-grant execute on function pc_direct(text), pc_category(text), pc_peers(text, int), pc_primary_lineage(text, int), pc_brief(text),
+grant execute on function pc_direct(text), pc_category(text), pc_peers(text, int), pc_primary_lineage(text, int), pc_brief_live(text),
   pc_compare(text, text), pc_batch(text[]) to anon, authenticated;
+grant execute on function pc_brief_live(text) to anon, authenticated;
+
+-- pc_brief: cached front door for pc_brief_live (same name and arguments the website already calls).
+create or replace function pc_brief(k text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare r jsonb; ck text := coalesce(k, '');
+begin
+  select c.payload into r from pc_cache c where c.fn = 'pc_brief' and c.arg = ck;
+  if found then return r; end if;
+  r := pc_brief_live(k);
+  if r is not null and (select count(*) from pc_cache) < 8000 and exists (select 1 from pc_devices d where d.knumber = upper(regexp_replace(coalesce(k, ''), '[\s\-]', '', 'g'))) then
+    begin
+      insert into pc_cache (fn, arg, payload) values ('pc_brief', ck, r) on conflict do nothing;
+    exception when others then null;  -- read-only call or a race: skip the save, still answer
+    end;
+  end if;
+  return r;
+end $$;
+revoke execute on function pc_brief_live(text) from public, anon, authenticated;
 grant execute on function pc_brief(text) to anon, authenticated;
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

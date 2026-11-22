@@ -1,5 +1,33 @@
 # Changelog
 
+## Full-site scan fixes, reviewed ownership and page cache (Phases 2 to 4, 2026-11-21 to 2026-11-22)
+
+A scan of every product page since 1996 and every company page, read the way a value analysis committee would.
+
+- **Out-of-scope pages:** 510(k)s on file only as predicates no longer get a full brief (4,284 pages).
+- **Wording:** zero counts, singular and plural ("1 device ID"), supplier and MAUDE text, form labels left in
+  indications text, and companies whose names an automatic title case mangled.
+- **Ownership:** 24 duplicate company IDs merged (same FDA address), wrong roll-ups fixed (for example Pioneer
+  Surgical), product-line sales worded as such, and headers that read "X, now part of X".
+- **Kyocera:** the record for Kyocera Corporation, Kyocera Medical Corporation and Kyocera Medical Technologies is named
+  "Kyocera" (it read "Kyocera Medical, Inc.", a name no filing uses).
+- **Medicare:** procedure family picked from the indications when the product code allows several; the "varies by
+  procedure" card narrowed to the company's segments.
+- **Distribution card:** companies with no GUDID brand now read NOT FOUND instead of "Every brand is in distribution"
+  (about 1,300 company records).
+- **Ties:** same-day clearances and equal counts break ties the same way every time.
+- **Page cache:** the five heaviest page functions keep their answers in `pc_cache`; repeat visits read one row.
+- **Tests:** "instrument" added to the allowed roles for procedure links.
+- **Procedure links:** 30 product codes added to revision hip and knee (21), hip replacement for hip fracture (7) and
+  primary hip and knee (2), from 54 candidates an AI crosswalk flagged, each checked against the CMS MS-DRG v41/v41.1
+  code lists (`C:\OrthoData\Reviews\Procedure_Links_Phase4_DECISIONS.xlsx`, outside the repo). The revision family
+  is picked from a device's name only for revision words; "semi-constrained" and "non-constrained" no longer count.
+- **Outpatient status:** the 6 procedure codes that read NOT FOUND now carry their CY 2024 status from CMS's OPPS
+  final rule Addenda B and E (lumbar fusion 22612, 22630, 22633: APC 5116; ACDF 22551: APC 5115; revision hip and
+  knee: inpatient only). The other rows now cite the same CMS file instead of secondary summaries.
+
+SQL to run: `02`, `03`, `10`, `12`, then `05`; after the link review, `12` and `05` again. No CSV import.
+
 ## Draft labels cleared (2026-11-20)
 
 The project owner reviewed every hand-made entry the site labeled as draft (`Reviews/OrthoParity_Draft_Review_EASY.xlsx`,

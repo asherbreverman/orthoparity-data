@@ -57,3 +57,6 @@ $$;
 grant execute on function pc_add_on_notes() to anon, authenticated;
 grant execute on function pc_device_add_on(text) to anon, authenticated;
 grant execute on function pc_vendor_add_on(text, text) to anon, authenticated;
+
+-- Empty the page cache so no page shows answers made before this file ran.
+do $$ begin if to_regclass('public.pc_cache') is not null then truncate pc_cache; end if; end $$;

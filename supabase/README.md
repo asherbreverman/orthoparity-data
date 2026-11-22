@@ -1,7 +1,8 @@
 # Database setup (Supabase)
 
 The website reads a Postgres database hosted on Supabase. These files build it from nothing. Every file is safe
-to run again, and none of them writes data except `07_after_import.sql`, which tidies what you imported.
+to run again. Two of them change data: `07_after_import.sql` tidies what you imported, and `12_curated_fixes.sql`
+applies the reviewed ownership and naming fixes on top of it.
 
 | File | What it creates |
 |---|---|
@@ -16,6 +17,16 @@ to run again, and none of them writes data except `07_after_import.sql`, which t
 | `09_maude_functions.sql` | FDA adverse event reports (MAUDE) for products and companies |
 | `10_supplier_functions.sql` | The supplier record on company pages: manufacturing sites, FDA inspections, 483 citations and warning letters |
 | `11_add_on_functions.sql` | Medicare add-on payments (NTAP and device pass-through) for products and companies |
+| `12_curated_fixes.sql` | Reviewed fixes on top of the imported data, each with its public source: company splits and merges, ownership changes, parents, segments, Medicare mappings. Run after every import and `07`, then rerun `05` |
+
+## Page cache
+
+The five heaviest page functions (`pc_brief`, `pc_signals`, `pc_vendor_brief`, `pc_vendor_signals`,
+`pc_vendor_supplier`) keep a copy of each answer in the `pc_cache` table, so a repeat visit reads one row instead of
+recomputing. The website calls them by the same names as before; the real work happens in `*_live` versions that
+only the cache can call. Every SQL file here empties the cache when it finishes, and so does `07_after_import.sql`,
+so a cached page never outlives the data or the rules that made it. The cache stops growing at 8,000 answers (about
+100 MB) to stay inside the Supabase Free plan's 500 MB; past that, pages still work, just uncached.
 
 ## Build a new database
 
@@ -31,6 +42,9 @@ to run again, and none of them writes data except `07_after_import.sql`, which t
 
 ## Update an existing database
 
+- Phase 4 (2026-11-22): run `02`, `03`, `10`, `12`, then `05`, each in a new query tab. They add the page cache, the
+  Kyocera name and the GUDID wording fix. No CSV import.
+
 - Medicare add-on payments (2026-11-20): run `01_tables.sql` (it only adds `pc_add_on_payment` and
   `pc_add_on_payment_510k`), import the two new CSVs, run `07_after_import.sql`, then run `11_add_on_functions.sql`.
 - Supplier record (2026-11-20): run `01_tables.sql` (it only adds `pc_establishment`, `pc_establishment_510k`,
@@ -44,7 +58,8 @@ to run again, and none of them writes data except `07_after_import.sql`, which t
 - Added the procedure view (2026-11-19): run `01_tables.sql` (it only adds the six new `pc_procedure*` and
   `pc_supply_evidence` tables; existing tables and data stay as they are), then `08_procedure_functions.sql`. Import
   the six new CSVs and run `07_after_import.sql`.
-- New data, same structure: re-import the CSVs, then run `07_after_import.sql`.
+- New data, same structure: re-import the CSVs, then run `07_after_import.sql`, `12_curated_fixes.sql` and
+  `05_decision_functions.sql`, in that order.
 - Changed functions: run the file that holds them. Each uses `create or replace`, so nothing is lost.
 
 ## Keys

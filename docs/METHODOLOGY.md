@@ -322,12 +322,35 @@ latest clearance date in the data, or for inspections, from the latest inspectio
 | Have any acquisitions or mergers occurred? | Acquisitions by the vendor in the last five years (older ones listed as earlier), and the vendor's current owner if another company bought it |
 | What are the financial ties for this vendor? | Latest year's total and recipients, consulting recipients, royalty share, physician owners |
 | Are they building clinical evidence? | Research studies funded, in orthopedic scope, and how many carry ClinicalTrials.gov numbers |
-| Is the portfolio in distribution? | GUDID brands, and brands with no device ID still in commercial distribution |
+| Is the portfolio in distribution? | GUDID brands, and brands with no device ID still in commercial distribution. NOT FOUND when GUDID lists no orthopedic brand for the company (GUDID started in 2014, so older or private-label lines have no record) |
 | Any recalls? | Recall events and Class I recalls |
 | Any adverse events? | MAUDE reports across the company's 510(k)s, and the product with the most recent reports |
 | What is the vendor's supplier record? | Company and partner sites, countries, device inspections and warning letters (see section 16c) |
 | What does Medicare pay for procedures that use their products? | The procedure families its product codes map to, and the payment range for the family with its most recent clearances |
 | Any Medicare add-on payments? | Its technologies with a FY 2027 NTAP or a CY 2027 pass-through code |
+
+**Ties.** Every "latest" or "top" pick breaks ties the same way (newest 510(k) number for same-day clearances,
+then name), so the same data always picks the same device.
+
+**Out-of-scope devices.** A 510(k) on file only as a predicate of an orthopedic device, outside the orthopedic
+product codes, gets no brief: the page says it is outside the database's scope.
+
+### 17b. Reviewed fixes on top of the import (`supabase/12_curated_fixes.sql`)
+
+The pipeline matches company names automatically, and some matches are wrong. `12_curated_fixes.sql` applies
+reviewed corrections after every import, each with its public source in the file and in `reference/`:
+
+- **Splits:** companies merged because their names share one generic word (for example "Medical", "Spine",
+  "Surgical"), split back out using the FDA applicant and GUDID labeler names.
+- **Merges:** spelling variants of one company, each confirmed by the same street address on FDA's 510(k) records.
+- **Ownership:** acquisitions, divestitures and product-line sales (`reference/vendor_lineage.csv`), and parents
+  from listings, filings or company statements. Where no public source names a parent, the parent stays empty.
+- **Segments and Medicare mappings** for companies and product codes that had none.
+
+### 17c. Page cache
+
+The five heaviest page functions keep each answer in `pc_cache` (see `supabase/README.md`). The cache changes
+speed only: every SQL file and every import empties it, so a cached answer always equals a fresh one.
 
 ## 18. Medicare payments by procedure (`load-medicare-hospitals`)
 
