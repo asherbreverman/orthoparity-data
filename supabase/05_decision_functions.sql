@@ -626,7 +626,7 @@ begin
   select count(distinct study_name), sum(amount), max(year) into n_st, st_amt, st_last
     from pc_op_research
     where ('|' || coalesce(knumbers, '') || '|') like '%|' || kn || '|%' and coalesce(ortho, true);
-  c_ev := pc_card('evidence', 'What clinical evidence exists?',
+  c_ev := pc_card('evidence', 'What industry-funded studies name it?',
     case when n_st > 0 then n_st || ' industry-funded' else 'None in Open Payments' end,
     case when coalesce(n_st, 0) = 0 and (pattern = 'competitive entry' or is_denovo) then 'attention' else 'info' end,
     case when n_st > 0 then n_st || ' industry-funded research stud' || case when n_st = 1 then 'y names' else 'ies name' end
@@ -693,7 +693,7 @@ begin
              case when coalesce(roy, 0) > 0 then pc_fig(pc_money(roy), 'royalties') end,
              case when coalesce(cons, 0) > 0 then pc_fig(pc_money(cons), 'consulting') end)
            else pc_figs(pc_fig('0', 'Open Payments records naming it, 2019 to 2025')) end);
-  c_ev := c_ev || jsonb_build_object('short', 'Evidence', 'figs', pc_figs(
+  c_ev := c_ev || jsonb_build_object('short', 'Industry studies', 'figs', pc_figs(
              pc_fig(pc_num(coalesce(n_st, 0)), 'industry-funded studies naming it'),
              case when n_st > 0 then pc_fig(pc_money(st_amt), 'reported research payments') end,
              case when n_st > 0 then pc_fig(st_last::text, 'latest year') end));
@@ -1386,7 +1386,7 @@ begin
       'Royalties go mostly to inventors and design surgeons; consulting goes to surgeons who advise, train or develop products. These relationships are normal in device development, and committees track them for disclosure.',
       'Will you disclose every financial relationship you have with our surgeons, as our conflict-of-interest policy requires?',
       'payments'),
-    pc_card('evidence', 'Are they building clinical evidence?',
+    pc_card('evidence', 'Are they funding clinical studies?',
       case when coalesce(n_st, 0) > 0 then n_st || ' industry-funded' else 'None in Open Payments' end,
       'info',
       case when coalesce(n_st, 0) > 0 then pc_money(st_amt) || ' in industry-funded orthopedic research across ' || n_st || ' studies since 2019, latest in ' || st_last || '.'
@@ -1437,7 +1437,7 @@ begin
              pc_fig(round((100 * coalesce(roy_share, 0))::numeric) || '%', 'royalties since 2019'),
              case when coalesce(cons_r, 0) > 0 then pc_fig(pc_num(cons_r), 'consultants paid in ' || latest) end)
            else pc_figs(pc_fig('0', 'orthopedic-scope payments, 2019 to 2025')) end));
-  cards := jsonb_set(cards, '{4}', (cards->4) || jsonb_build_object('short', 'Evidence', 'figs', pc_figs(
+  cards := jsonb_set(cards, '{4}', (cards->4) || jsonb_build_object('short', 'Industry studies', 'figs', pc_figs(
              case when n_st > 0 then pc_fig(pc_money(st_amt), 'industry-funded research since 2019') end,
              pc_fig(pc_num(coalesce(n_st, 0)), 'industry-funded studies'), case when n_st > 0 then pc_fig(st_last::text, 'latest year') end)));
   cards := jsonb_set(cards, '{5}', (cards->5) || jsonb_build_object('short', 'Distribution', 'figs', pc_figs(

@@ -1,5 +1,27 @@
 # Changelog
 
+## Home page device total, company approval counts and approval read rules (2026-11-22)
+
+- `supabase/03_vendor_functions.sql`: `pc_vendor_coverage()` also returns `approvals` (131) and `devices` (18,355:
+  the 18,224 510(k)s and De Novos in the starting set plus the FDA approvals), so the home page shows one device
+  total that updates with each release. It counts approvals only once `pc_approvals` exists, so it still works
+  in a fresh rebuild, where 03 runs before 13.
+- `pc_vendor_brief` portfolio also returns `approvals` (Zimmer Biomet 10 of 1,524, Stryker 11 of 1,713), so the
+  company header can read the count instead of loading the full product list (Lovable backlog L8).
+- `supabase/13_approvals.sql`: the approval read rules use `number is not null` (and `supplement_number is not
+  null` for supplements), the same rules Lovable set live after its security scan. Every row stays public.
+- The home page labels changed in Lovable (backlog L5).
+
+## Evidence box renamed (2026-11-22)
+
+Reviewers read "What clinical evidence exists?" with "None in Open Payments" as "no clinical evidence". The box only
+counts industry-funded studies in Open Payments.
+
+- `supabase/05_decision_functions.sql`: the product card asks "What industry-funded studies name it?" and the company
+  card asks "Are they funding clinical studies?". Both short labels read "Industry studies". Badges, figures and the
+  "Published studies and registry data are not included yet" sentence are unchanged.
+- `docs/METHODOLOGY.md`: question names updated.
+
 ## Phase 5 review: every approval page checked (2026-11-22)
 
 A review of all 131 PMA and HDE pages, their company pages and search, against FDA's PMA and HDE databases.

@@ -177,7 +177,8 @@ begin
              where p.vendor_id in (select vendor_id from pc_vendor_family(v, md) where md = 'current' or vendor_id = v))
   select jsonb_build_object('clearances', count(*), 'product_codes', count(distinct product_code),
            'first_year', min(extract(year from decision_date))::int, 'last_year', max(extract(year from decision_date))::int,
-           'last5_clearances', count(*) filter (where decision_date >= (select max(decision_date) from pc_portfolio_510k) - interval '5 years')),
+           'last5_clearances', count(*) filter (where decision_date >= (select max(decision_date) from pc_portfolio_510k) - interval '5 years'),
+           'approvals', count(*) filter (where knumber ~* '^[PHN]')),
          count(distinct product_code)
     into port, n_codes from p;
   with p as (select p.product_code, c.plain_name, c.fda_name, c.anatomy, c.kind, c.device_class, p.decision_date
@@ -417,14 +418,23 @@ begin
 end $$;
 
 -- home page counts: parent companies with 510(k) clearances (a company another company owns counts under its parent)
+-- Home page coverage tiles: companies, years and the device total (the 510(k)s and De Novos in the starting set plus
+-- FDA approvals, once 13_approvals.sql has created pc_approvals).
 create or replace function pc_vendor_coverage()
-returns jsonb language sql stable as $$
+returns jsonb language plpgsql stable as $$
+declare r jsonb; n_appr int := 0;
+begin
+  if to_regclass('public.pc_approvals') is not null then execute 'select count(*) from pc_approvals' into n_appr; end if;
   select jsonb_build_object(
     'parent_companies', count(*) filter (where coalesce(rolls_up_to, vendor_id) = vendor_id),
     'filer_companies', count(*),
-    'first_year', min(first_clearance_year), 'last_year', max(last_clearance_year))
-  from pc_vendors where coalesce(clearances, 0) > 0
-$$;
+    'first_year', min(first_clearance_year), 'last_year', max(last_clearance_year),
+    'approvals', n_appr,
+    'devices', coalesce((select value::int from pc_meta where key = 'starting_set_clearances'), 0) + n_appr)
+    into r
+  from pc_vendors where coalesce(clearances, 0) > 0;
+  return r;
+end $$;
 
 grant execute on function pc_vendor_parent(text), pc_vendor_step(text), pc_vendor_resolve(text), pc_device_owner(text),
   pc_vendor_coverage() to anon, authenticated;

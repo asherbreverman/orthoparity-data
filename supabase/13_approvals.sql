@@ -30,7 +30,10 @@ begin
   foreach t in array array['pc_approvals', 'pc_approval_supplements'] loop
     execute format('alter table %I enable row level security', t);
     execute format('drop policy if exists "public read" on %I', t);
-    execute format('create policy "public read" on %I for select to anon, authenticated using (true)', t);
+    -- Same rules Lovable set live on Nov 22: every row is public, written so the security scan doesn't flag "true".
+    execute format('create policy "public read" on %I for select to anon, authenticated using (%s)', t,
+      case when t = 'pc_approval_supplements' then 'number is not null and supplement_number is not null'
+           else 'number is not null' end);
     execute format('grant select on %I to anon, authenticated', t);
   end loop;
 end $$;

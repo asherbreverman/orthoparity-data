@@ -361,7 +361,7 @@ latest clearance date in the data, or for inspections, from the latest inspectio
 | Who sells it today? | The 510(k) holder at clearance against the company that owns the product line now (vendor roll-up and dated product-line sales) |
 | What else does the job? | Other companies with clearances in the same product code in the last five years, grouped by current owner |
 | What are the financial ties for this product? | Open Payments naming this 510(k) or its brand |
-| What clinical evidence exists? | Industry-funded research in Open Payments that names this 510(k), and ClinicalTrials.gov numbers on those records |
+| What industry-funded studies name it? | Industry-funded research in Open Payments that names this 510(k), and ClinicalTrials.gov numbers on those records |
 | What will it take to stock on the shelf? | GUDID device IDs citing this 510(k), how many are in distribution, and the category median |
 | Any recalls? | Recalls naming this 510(k), and recalls naming its direct predicates |
 | Any adverse events? | MAUDE reports naming this 510(k): all years, the last five years by type, and the median for its product code |
@@ -377,7 +377,7 @@ latest clearance date in the data, or for inspections, from the latest inspectio
 | Are they still investing? | Clearances in the last five years against the five before: more (20% or more up), fewer (20% or more down), steady, new entrant, or none recent |
 | Have any acquisitions or mergers occurred? | Acquisitions by the vendor in the last five years (older ones listed as earlier), and the vendor's current owner if another company bought it |
 | What are the financial ties for this vendor? | Latest year's total and recipients, consulting recipients, royalty share, physician owners |
-| Are they building clinical evidence? | Research studies funded, in orthopedic scope, and how many carry ClinicalTrials.gov numbers |
+| Are they funding clinical studies? | Research studies funded, in orthopedic scope, and how many carry ClinicalTrials.gov numbers |
 | Is the portfolio in distribution? | GUDID brands, and brands with no device ID still in commercial distribution. NOT FOUND when GUDID lists no orthopedic brand for the company (GUDID started in 2014, so older or private-label lines have no record) |
 | Any recalls? | Recall events and Class I recalls |
 | Any adverse events? | MAUDE reports across the company's 510(k)s, and the product with the most recent reports |
