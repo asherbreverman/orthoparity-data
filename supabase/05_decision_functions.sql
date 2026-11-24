@@ -412,6 +412,7 @@ declare
   ind jsonb; sim numeric; own jsonb; mau jsonb; sup jsonb; addon jsonb; procs jsonb;
   fam_id text; fam_name text; fam_status text; n_fam int; drg_n int; drg_min numeric; drg_max numeric; fam_avg numeric;
   fam_dis numeric; sup30 numeric; sup50 numeric; data_yr int; n_nct int; nct_ids text; pred_recalls int;
+  asc_n int; asc_rated int; asc_min numeric; asc_yr int; asc_list text; asc_top text; asc_txt text;
   n_peers int; n_code int; r5 int; d5 int; i5 int; m5 int; partners text; countries text; flagged text;
   ntap_amt numeric; ntap_name text; tpt_code text; cat_tech text;
   days_new int; is_new boolean; is_capital boolean; dtext text; peer_names text; addon_lead text := '';
@@ -1041,6 +1042,24 @@ begin
     select count(*), min(medicare_pays), max(medicare_pays) into drg_n, drg_min, drg_max from pc_procedure_drg where family_id = fam_id;
     select medicare_pays, discharges, supply_total_30, supply_total_50, data_year into fam_avg, fam_dis, sup30, sup50, data_yr
       from pc_procedures where family_id = fam_id;
+    -- Medicare ASC rates for the family's key procedure codes (14_asc_rates.sql), when that table exists
+    asc_txt := ' Outpatient and ASC payments are not shown here.';
+    if fam_id is not null and to_regclass('public.pc_procedure_asc') is not null then
+      select count(*), count(asc_rate), min(asc_rate), max(rate_year),
+             string_agg(lower(left(procedure, 1)) || substr(procedure, 2) || ' (CPT ' || cpt || ') ' || pc_usd(round(asc_rate))
+                          || case when device_portion is not null then ', with ' || pc_usd(round(device_portion)) || ' as the device portion' else '' end,
+                        '; ' order by sort_order) filter (where asc_rate is not null),
+             (array_agg(lower(left(procedure, 1)) || substr(procedure, 2) || '|' || pc_usd(round(asc_rate))
+                          || coalesce('|' || pc_usd(round(device_portion)), '') order by sort_order) filter (where asc_rate is not null))[1]
+        into asc_n, asc_rated, asc_min, asc_yr, asc_list, asc_top
+        from pc_procedure_asc where family_id = fam_id;
+      if asc_rated > 0 then
+        asc_txt := ' At an ambulatory surgery center (ASC), Medicare''s CY ' || asc_yr || ' national rates, before each area''s wage adjustment, are '
+                   || asc_list || '. One ASC payment covers the facility and the implant; the surgeon is paid separately. Hospital outpatient payments are not shown here.';
+      elsif asc_n > 0 then
+        asc_txt := ' None of this family''s key procedure codes is on Medicare''s CY ' || asc_yr || ' ASC list. Hospital outpatient payments are not shown here.';
+      end if;
+    end if;
     if c_med is null then
     c_med := pc_card('medicare', 'What does Medicare pay for procedures that use it?',
       case when fam_id is null then 'No procedure match' else pc_pay_range(drg_min, drg_max, true) || ' per inpatient case' end,
@@ -1058,7 +1077,7 @@ begin
                           || pc_usd(round(sup30)) || ' to ' || pc_usd(round(sup50)) || '.' else '' end
                 || case when n_fam > 1 then ' It is also mapped to ' || (n_fam - 1) || ' other procedure famil' || case when n_fam = 2 then 'y.' else 'ies.' end else '' end
                 || ' The link from product code ' || code || ' to this procedure is ' || coalesce(fam_status, 'draft') || '.'
-                || ' Outpatient and ASC payments are not shown here.' end,
+                || asc_txt end,
       'The DRG payment is fixed per case, so the implant cost has to fit inside it with the room, the operating room and the nursing. Which DRG a case falls into depends on the approach, levels and complications.',
       case when fam_id is null then 'Which inpatient and outpatient procedures is this product used in?'
            else 'Medicare pays ' || pc_pay_range(drg_min, drg_max) || ' per case for ' || lower(fam_name)
@@ -1069,9 +1088,13 @@ begin
       'figs', pc_figs(pc_fig(pc_num(drg_n), 'MS-DRGs in ' || coalesce(lower(fam_name), 'the family')),
                       pc_fig(pc_usd(round(drg_min)), 'lowest DRG average'), pc_fig(pc_usd(round(drg_max)), 'highest DRG average'),
                       pc_fig(pc_num(fam_dis), 'Medicare discharges, ' || coalesce(data_yr::text, '')),
-                      pc_fig(fam_status, 'mapping status')),
+                      pc_fig(fam_status, 'mapping status'),
+                      case when asc_rated > 0 then pc_fig(pc_usd(round(asc_min)), 'lowest ASC rate, CY ' || asc_yr) end),
       'asks', pc_asks(c_med->>'ask',
-        case when fam_id is not null then 'Which other implants complete the construct in a typical ' || lower(fam_name) || ' case, and are they on the same contract?' end));
+        case when fam_id is not null then 'Which other implants complete the construct in a typical ' || lower(fam_name) || ' case, and are they on the same contract?' end,
+        case when asc_top is not null and split_part(asc_top, '|', 3) <> '' then 'At an ASC, Medicare pays ' || split_part(asc_top, '|', 2) || ' for '
+                  || split_part(asc_top, '|', 1) || ' and counts ' || split_part(asc_top, '|', 3)
+                  || ' of it as the device portion. What would the implants cost per case in an ASC?' end));
     end if;
   end if;
 

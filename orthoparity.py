@@ -55,6 +55,8 @@ PAYMENT_STEPS = [
      "Restore trademark signs, dashes and accented letters lost in the source files."),
     ("export-payments", "pipeline.export_payments",
      "Write the vendor and payment CSVs for the website."),
+    ("export-catalog", "pipeline.export_catalog",
+     "Write the part-number lookup (GUDID catalog and model numbers for every device on the site)."),
 ]
 RECALL_STEPS = [
     ("fetch-recalls", "pipeline.fetch_recalls",
@@ -81,6 +83,8 @@ APPROVAL_STEPS = [
 MEDICARE_STEPS = [
     ("load-medicare-hospitals", "pipeline.load_medicare",
      "Build the procedure view from CMS Medicare inpatient and outpatient hospital payments (national, no charges)."),
+    ("load-asc", "pipeline.load_asc",
+     "Look up Medicare ASC payment rates (CY 2027) for each procedure family's key codes and write supabase/14_asc_rates.sql."),
 ]
 TOOL_STEPS = [
     ("lookup", "tools.lookup", "Look up one device's ancestor chain from the command line."),

@@ -307,7 +307,7 @@ declare
   md text := pc_mode(m);
   va pc_vendors; vb pc_vendors;
   codes jsonb; n_shared int; n_a int; n_b int; pa jsonb; pb jsonb; mixa jsonb; mixb jsonb; latest int;
-  shared_all int; shared_latest int; rel_a int; rel_b int; top_shared text;
+  shared_all int; shared_latest int; rel_a int; rel_b int; top_shared text; no_a int; no_b int;
 begin
   select * into va from pc_vendors where vendor_id = a;
   select * into vb from pc_vendors where vendor_id = b;
@@ -315,9 +315,11 @@ begin
     return jsonb_build_object('found', false);
   end if;
   with ca as (select p.product_code, count(*) n from pc_portfolio_510k p
-              where p.vendor_id in (select vendor_id from pc_vendor_family(a, md) where md = 'current' or vendor_id = a) group by 1),
+              where p.vendor_id in (select vendor_id from pc_vendor_family(a, md) where md = 'current' or vendor_id = a)
+                and p.product_code is not null group by 1),
        cb as (select p.product_code, count(*) n from pc_portfolio_510k p
-              where p.vendor_id in (select vendor_id from pc_vendor_family(b, md) where md = 'current' or vendor_id = b) group by 1),
+              where p.vendor_id in (select vendor_id from pc_vendor_family(b, md) where md = 'current' or vendor_id = b)
+                and p.product_code is not null group by 1),
        j as (select coalesce(ca.product_code, cb.product_code) as product_code, coalesce(ca.n, 0) as a_clearances,
                     coalesce(cb.n, 0) as b_clearances,
                     case when ca.n > 0 and cb.n > 0 then 'both' when ca.n > 0 then 'only_a' else 'only_b' end as side
@@ -331,15 +333,19 @@ begin
             filter (where side = 'both'))[1]
     into codes, n_shared, n_a, n_b, top_shared
     from j left join pc_product_codes c on c.product_code = j.product_code;
+  -- products with no FDA product code on file stay out of the code lists and are counted here instead
+  select count(*) filter (where p.vendor_id in (select vendor_id from pc_vendor_family(a, md) where md = 'current' or vendor_id = a)),
+         count(*) filter (where p.vendor_id in (select vendor_id from pc_vendor_family(b, md) where md = 'current' or vendor_id = b))
+    into no_a, no_b from pc_portfolio_510k p where p.product_code is null;
 
   select least(max(year) filter (where vendor_id = a), max(year) filter (where vendor_id = b)) into latest
     from pc_op_vendor_profile where mode = md and year > 0 and vendor_id in (a, b);
   select to_jsonb(p) - 'mode' into pa from pc_op_vendor_profile p where vendor_id = a and mode = md and year = latest;
   select to_jsonb(p) - 'mode' into pb from pc_op_vendor_profile p where vendor_id = b and mode = md and year = latest;
   select coalesce(jsonb_agg(jsonb_build_object('nature_group', nature_group, 'amount', s) order by s desc), '[]'::jsonb) into mixa
-    from (select nature_group, sum(amount) s from pc_op_vendor_year where vendor_id = a and mode = md group by 1) x;
+    from (select nature_group, sum(amount) s from pc_op_vendor_year where vendor_id = a and mode = md and year = latest group by 1) x;
   select coalesce(jsonb_agg(jsonb_build_object('nature_group', nature_group, 'amount', s) order by s desc), '[]'::jsonb) into mixb
-    from (select nature_group, sum(amount) s from pc_op_vendor_year where vendor_id = b and mode = md group by 1) x;
+    from (select nature_group, sum(amount) s from pc_op_vendor_year where vendor_id = b and mode = md and year = latest group by 1) x;
 
   select count(*) into shared_all from (
     select rkey from pc_op_relationship where mode = md and vendor_id = a
@@ -358,6 +364,7 @@ begin
                          || ' code' || case when n_a = 1 then '' else 's' end || ' that ' || vb.display_name || ' doesn''t, and '
                          || vb.display_name || ' covers ' || n_b || ' that ' || va.display_name || ' doesn''t.' end,
     'codes', codes, 'shared_codes', n_shared, 'only_a', n_a, 'only_b', n_b,
+    'no_code', jsonb_build_object('a', no_a, 'b', no_b),
     'payments', jsonb_build_object('year', latest, 'a', pa, 'b', pb, 'mix_a', mixa, 'mix_b', mixb),
     'shared_surgeons', jsonb_build_object('all_years', shared_all, 'latest_year', shared_latest,
                                           'a_relationships', rel_a, 'b_relationships', rel_b,

@@ -458,3 +458,37 @@ musculoskeletal APCs (5112 to 5116) and, for a few key procedure codes, its outp
 **Checks.** No row below the 11-case suppression floor, no total payment below Medicare's payment, family
 discharges equal to the sum of their DRGs, every product code known, and no DRG in two families. Results go to
 `outputs/Medicare_Report.txt`.
+
+## 18b. Medicare ASC payment rates (`load-asc`, `supabase/14_asc_rates.sql`)
+
+Source: CMS's CY 2027 OPPS/ASC final rule (CMS-1850-FC), ASC Addendum AA (covered surgical procedures, payment
+indicator and national payment rate) and Addendum FF (device offset: the share and dollar amount of a device-intensive
+procedure's payment that CMS counts as the device portion). `reference/procedure_asc_codes.csv` lists the key procedure
+codes for each procedure family; the step copies each code's indicator, rate and device portion, and stops if either
+addendum isn't for the year in `[cms_asc] RATE_YEAR`.
+
+- Rates are national and unadjusted. Each ASC's Medicare payment is wage-adjusted for its area, and commercial payers
+  set their own rates.
+- One ASC payment covers the facility and the implant; the surgeon is paid separately under the physician fee schedule.
+- The device portion comes from Addendum FF for device-intensive procedures (payment indicator J8) only.
+- CPT descriptions in the CMS files are AMA copyright, so only the codes and rates are copied. Procedure names come
+  from the reference file.
+- The Medicare box adds the ASC rates for the family it already shows. Hospital outpatient payments are still not
+  shown in that box.
+
+## 18c. Part-number lookup (`export-catalog`, `supabase/15_part_search.sql`)
+
+Source: the FDA GUDID full release (November 2026), already indexed by `index-gudid`. For every GUDID device record
+whose premarket submission is a 510(k), De Novo, PMA or HDE number on the site, the lookup keeps the catalog number and
+the version or model number as printed, the FDA number, the brand and whether the record is in commercial distribution.
+
+- 993,975 rows (805,278 distinct part numbers) from 945,631 linked GUDID records. 7,550 of the site's 18,224 FDA numbers
+  have GUDID records. The rest have none that names them: GUDID records began in 2014, and a product no longer sold
+  often has no record.
+- Identical rows merge. Identifiers with fewer than 3 letters or digits and placeholders (N/A, NONE, TBD) are dropped.
+- Search ignores case, spaces and punctuation ("213-65-05" finds "21365 05"). Exact matches come first, then part
+  numbers that start with what was typed. At least 3 letters or digits are required.
+- A part number listed under several FDA numbers shows every one: companies reuse part numbers across submissions and
+  across product lines, and GUDID records what each company submitted.
+- GUDID is company-reported. A part number missing here may still be sold under that 510(k).
+

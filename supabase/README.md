@@ -18,6 +18,8 @@ applies the reviewed ownership and naming fixes on top of it.
 | `10_supplier_functions.sql` | The supplier record on company pages: manufacturing sites, FDA inspections, 483 citations and warning letters |
 | `11_add_on_functions.sql` | Medicare add-on payments (NTAP and device pass-through) for products and companies |
 | `13_approvals.sql` | FDA premarket approvals (PMA) and humanitarian device exemptions (HDE): one page per approval, with its supplement history, hooked into every existing box. Run after `07`, before `12` |
+| `14_asc_rates.sql` | Medicare ASC payment rates (CY 2027) for each procedure family's key codes. Written by `python orthoparity.py load-asc`; holds its own rows, so there's nothing to import. Run after `13`, before `12` |
+| `15_part_search.sql` | Part-number lookup from FDA GUDID: tables `pc_catalog` and `pc_catalog_brand` plus `pc_part_search(q)`. Run once, then import `pc_catalog_brand.csv` and `pc_catalog_1.csv` to `pc_catalog_4.csv`. Never deletes rows |
 | `12_curated_fixes.sql` | Reviewed fixes on top of the imported data, each with its public source: company splits and merges, ownership changes, parents, segments, Medicare mappings. Run after every import and `07`, then rerun `05` |
 
 ## Page cache
@@ -67,8 +69,11 @@ so a cached page never outlives the data or the rules that made it. The cache st
 - Added the procedure view (2026-11-19): run `01_tables.sql` (it only adds the six new `pc_procedure*` and
   `pc_supply_evidence` tables; existing tables and data stay as they are), then `08_procedure_functions.sql`. Import
   the six new CSVs and run `07_after_import.sql`.
-- New data, same structure: re-import the CSVs, then run `07_after_import.sql`, `13_approvals.sql`,
+- New data, same structure: re-import the CSVs, then run `07_after_import.sql`, `13_approvals.sql`, `14_asc_rates.sql`,
   `12_curated_fixes.sql` and `05_decision_functions.sql`, in that order.
+- Phase 6, compare fixes, ASC rates and part numbers (2026-11-23): run `03_vendor_functions.sql`, `14_asc_rates.sql`
+  and `15_part_search.sql`, import `pc_catalog_brand.csv` into `pc_catalog_brand` and `pc_catalog_1.csv` to
+  `pc_catalog_4.csv` into `pc_catalog`, then run `05_decision_functions.sql`.
 - Changed functions: run the file that holds them. Each uses `create or replace`, so nothing is lost.
 
 ## Keys

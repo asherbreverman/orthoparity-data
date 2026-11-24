@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 6: compare fixes, ASC rates and part-number lookup (2026-11-23)
+
+- `supabase/03_vendor_functions.sql`, `pc_vendor_compare`: products with no FDA product code on file stay out of the
+  code lists and come back as `no_code` counts (Alphatec Spine showed a "null" row for K243461). The payment mix uses
+  the same year as the payment totals; it had summed 2019 to 2025 under a single-year heading (Globus royalties 71.8%
+  across all years, 70.2% in 2025).
+- `pipeline/load_asc.py` (`load-asc`), `reference/procedure_asc_codes.csv` and `supabase/14_asc_rates.sql`: Medicare
+  CY 2027 ASC rates and device portions for 12 key procedure codes, from CMS ASC Addenda AA and FF. The Medicare box
+  now lists them for the procedure family it shows, adds the lowest ASC rate as a figure and asks what the implants
+  would cost per case in an ASC (`supabase/05_decision_functions.sql`).
+- `pipeline/export_catalog.py` (`export-catalog`) and `supabase/15_part_search.sql`: a part-number lookup from FDA
+  GUDID, 993,975 catalog and version or model numbers linked to the site's FDA numbers, searched by
+  `pc_part_search(q)` (about 96 MB in Postgres).
+- `tests/test_asc_catalog.py`: 4 tests. 137 pass.
+- Website changes for the compare pages, the 50-product compare and part-number search are in the Lovable backlog.
+
 ## Home page device total, company approval counts and approval read rules (2026-11-22)
 
 - `supabase/03_vendor_functions.sql`: `pc_vendor_coverage()` also returns `approvals` (131) and `devices` (18,355:

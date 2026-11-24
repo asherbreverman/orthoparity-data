@@ -1,0 +1,13 @@
+family_id,cpt,procedure
+hip_knee_replacement,27447,Total knee replacement
+hip_knee_replacement,27130,Total hip replacement
+revision_hip_knee,27134,Revision total hip replacement
+revision_hip_knee,27487,Revision total knee replacement
+hip_fracture_replacement,27236,Hemiarthroplasty for femoral neck fracture
+hip_femur_fixation,27245,"Intramedullary nail, hip fracture"
+hip_femur_fixation,27244,"Plate and screw (sliding hip screw), hip fracture"
+shoulder_elbow_replacement,23472,Total shoulder replacement
+thoracolumbar_fusion,22612,"Posterolateral lumbar fusion, single level"
+thoracolumbar_fusion,22630,"Posterior lumbar interbody fusion, single level"
+thoracolumbar_fusion,22633,"Combined posterolateral and interbody lumbar fusion, single level"
+cervical_fusion,22551,"Anterior cervical discectomy and fusion (ACDF), single level"
