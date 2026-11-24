@@ -151,6 +151,22 @@ under `[medicare]` for the Medicare files.
 - `reference/procedure_outpatient.csv`: outpatient status and APC for key procedure codes, each with its source.
   Rows not confirmed from an official CMS list read NOT FOUND.
 
+## 12. CMS TEAM model
+
+- **What:** Medicare's Transforming Episode Accountability Model: preliminary target prices by MS-DRG and census
+  division (PY1 2026, dated 2025-12-10; PY2 2027, dated 2026-11-04), the participant list (as of August 18, 2026) and
+  the TEAM DRG Mapping Specifications (updated October 2026).
+- **Where:** https://www.cms.gov/priorities/innovation/innovation-models/team-model. Save the four XLSX files,
+  unopened, in `../CMS TEAM`. Rules: 42 CFR 512.525 and 512.540 (eCFR) and the Participation Tracks fact sheet.
+
+## 13. ClinicalTrials.gov
+
+- **What:** registry records for every study with a device intervention: status, sponsor, design, primary outcome,
+  conditions (with NLM's MeSH terms) and whether results are posted.
+- **Where:** the ClinicalTrials.gov API v2 (https://clinicaltrials.gov/api/v2/studies), 78 requests at 1 per second.
+  `fetch-trials` caches the download in `outputs/trials/device_trials.jsonl`. Downloaded November 24, 2026: 77,365
+  studies.
+
 ## Human review inputs (in this repository)
 
 - `reference/vendor_families.csv`: name patterns that group a company's many spellings into one vendor.

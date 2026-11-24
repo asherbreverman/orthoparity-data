@@ -20,6 +20,11 @@ applies the reviewed ownership and naming fixes on top of it.
 | `13_approvals.sql` | FDA premarket approvals (PMA) and humanitarian device exemptions (HDE): one page per approval, with its supplement history, hooked into every existing box. Run after `07`, before `12` |
 | `14_asc_rates.sql` | Medicare ASC payment rates (CY 2027) for each procedure family's key codes. Written by `python orthoparity.py load-asc`; holds its own rows, so there's nothing to import. Run after `13`, before `12` |
 | `15_part_search.sql` | Part-number lookup from FDA GUDID: tables `pc_catalog` and `pc_catalog_brand` plus `pc_part_search(q)`. Run once, then import `pc_catalog_brand.csv` and `pc_catalog_1.csv` to `pc_catalog_4.csv`. Never deletes rows |
+| `16_directory.sql` | Category directories: `pc_directory_index()` and `pc_directory(code)`, every orthopedic FDA record by product code. Functions only, no tables. Run after `05` |
+| `17_team_data.sql` | Medicare TEAM model data: trigger codes, the procedure families that are TEAM episodes, CMS preliminary regional target prices (2026, 2027) and the hospital participant list. Written by `python orthoparity.py load-team`; holds its own rows, so there's nothing to import |
+| `18_team_functions.sql` | TEAM functions: `pc_team_family`, `pc_team_code`, `pc_team_hospital` and the sentence the Medicare box adds. Run after `17`, before `05` |
+| `19_trials.sql` | Registered trials from ClinicalTrials.gov: tables `pc_trial`, `pc_trial_device`, `pc_trial_vendor` and `pc_device_trials`, `pc_vendor_trials`, `pc_trial_lookup`. Import the three CSVs after the first run. Run before `05` |
+| `20_site_notes.sql` | The public corrections log (`pc_corrections`) and release notes (`pc_release_notes`). Holds its own rows; add a row and rerun |
 | `12_curated_fixes.sql` | Reviewed fixes on top of the imported data, each with its public source: company splits and merges, ownership changes, parents, segments, Medicare mappings. Run after every import and `07`, then rerun `05` |
 
 ## Page cache
@@ -74,6 +79,12 @@ so a cached page never outlives the data or the rules that made it. The cache st
 - Phase 6, compare fixes, ASC rates and part numbers (2026-11-23): run `03_vendor_functions.sql`, `14_asc_rates.sql`
   and `15_part_search.sql`, import `pc_catalog_brand.csv` into `pc_catalog_brand` and `pc_catalog_1.csv` to
   `pc_catalog_4.csv` into `pc_catalog`, then run `05_decision_functions.sql`.
+- Phase 7, TEAM, registered trials, category directories and site notes (2026-11-24): run `16_directory.sql`,
+  `17_team_data.sql`, `18_team_functions.sql` and `19_trials.sql`; import `pc_trial.csv`, `pc_trial_device.csv` and
+  `pc_trial_vendor.csv` into the tables with the same names; run `20_site_notes.sql`, then `05_decision_functions.sql`.
+  The new tables add about 3 MB.
+- New data after Phase 7: the run order after an import becomes 07, 13, 14, 12, 17, 18, 19, 05 (16 and 20 change
+  nothing on an import; rerun 16 only if its functions change).
 - Changed functions: run the file that holds them. Each uses `create or replace`, so nothing is lost.
 
 ## Keys

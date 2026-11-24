@@ -413,6 +413,7 @@ declare
   fam_id text; fam_name text; fam_status text; n_fam int; drg_n int; drg_min numeric; drg_max numeric; fam_avg numeric;
   fam_dis numeric; sup30 numeric; sup50 numeric; data_yr int; n_nct int; nct_ids text; pred_recalls int;
   asc_n int; asc_rated int; asc_min numeric; asc_yr int; asc_list text; asc_top text; asc_txt text;
+  team jsonb; trials jsonb;  -- Phase 7: TEAM (18_team_functions.sql) and registered trials (19_trials.sql)
   n_peers int; n_code int; r5 int; d5 int; i5 int; m5 int; partners text; countries text; flagged text;
   ntap_amt numeric; ntap_name text; tpt_code text; cat_tech text;
   days_new int; is_new boolean; is_capital boolean; dtext text; peer_names text; addon_lead text := '';
@@ -627,13 +628,20 @@ begin
   select count(distinct study_name), sum(amount), max(year) into n_st, st_amt, st_last
     from pc_op_research
     where ('|' || coalesce(knumbers, '') || '|') like '%|' || kn || '|%' and coalesce(ortho, true);
+  -- Phase 7: registered trials whose ClinicalTrials.gov record names this FDA number (19_trials.sql)
+  if to_regprocedure('pc_device_trials(text)') is not null then
+    trials := pc_device_trials(kn);
+  end if;
   c_ev := pc_card('evidence', 'What industry-funded studies name it?',
     case when n_st > 0 then n_st || ' industry-funded' else 'None in Open Payments' end,
     case when coalesce(n_st, 0) = 0 and (pattern = 'competitive entry' or is_denovo) then 'attention' else 'info' end,
     case when n_st > 0 then n_st || ' industry-funded research stud' || case when n_st = 1 then 'y names' else 'ies name' end
                             || ' this 510(k) (' || pc_money(st_amt) || ' reported, latest ' || st_last || ').'
          else 'No industry-funded research in Open Payments names this 510(k).' end
-    || ' Published studies and registry data are not included yet.',
+    || case when trials is null then ' Published studies and registry data are not included yet.'
+            when (trials->>'total')::int > 0 then ' ClinicalTrials.gov: ' || pc_count((trials->>'total')::int, 'registered trial names', 'registered trials name')
+                 || ' this FDA number (' || (trials->>'active') || ' recruiting or active, ' || (trials->>'with_results') || ' with results posted). Published papers are not included.'
+            else ' No ClinicalTrials.gov record names this FDA number; most records name none, so this product may still have been studied. Published papers are not included.' end,
     case when n_st > 0 then 'The company is collecting data on this device. Ask for results, not just enrollment.'
          else 'Evidence may rest on predicate devices or on studies outside Open Payments.' end,
     'What clinical data exists for this device itself, as opposed to its predicates?',
@@ -697,7 +705,8 @@ begin
   c_ev := c_ev || jsonb_build_object('short', 'Industry studies', 'figs', pc_figs(
              pc_fig(pc_num(coalesce(n_st, 0)), 'industry-funded studies naming it'),
              case when n_st > 0 then pc_fig(pc_money(st_amt), 'reported research payments') end,
-             case when n_st > 0 then pc_fig(st_last::text, 'latest year') end));
+             case when n_st > 0 then pc_fig(st_last::text, 'latest year') end,
+             case when trials is not null then pc_fig(trials->>'total', 'registered trials naming it') end));
   c_cat := c_cat || jsonb_build_object('short', 'Stocking', 'figs', pc_figs(
              pc_fig(pc_num(coalesce(skus, 0)), 'catalog items in GUDID'),
              case when skus > 0 then pc_fig(pc_num(skus_in), 'in commercial distribution') end,
@@ -741,7 +750,10 @@ begin
              else 'No industry-funded studies name this product. What clinical data supports it, or why is none needed beyond its predicates?' end));
   c_ev := c_ev || jsonb_build_object('asks', pc_asks(c_ev->>'ask',
              case when n_nct > 0 then 'Which of these studies have results posted on ClinicalTrials.gov (' || nct_ids || ')?' end,
-             case when n_st > 0 then 'What clinical data exists for this device itself, as opposed to its predicates?' end));
+             case when n_st > 0 then 'What clinical data exists for this device itself, as opposed to its predicates?' end,
+             case when (trials->>'total')::int > 0 then 'ClinicalTrials.gov lists ' || (select string_agg(x->>'nct', ', ') from jsonb_array_elements(trials->'trials') x)
+                  || ' for this product. ' || case when (trials->>'total')::int = 1 then 'What has it found so far, and when will results be posted?'
+                                                   else 'What have they found so far, and when will results be posted?' end end));
   c_cat := c_cat || jsonb_build_object('asks', pc_asks(
              case when coalesce(skus, 0) > 0 then 'GUDID lists ' || pc_num(skus) || ' catalog items under this 510(k). Can you confirm the full part-number list we would load, and explain any part numbers not in GUDID?' end,
              c_cat->>'ask'));
@@ -1060,6 +1072,10 @@ begin
         asc_txt := ' None of this family''s key procedure codes is on Medicare''s CY ' || asc_yr || ' ASC list. Hospital outpatient payments are not shown here.';
       end if;
     end if;
+    -- Phase 7: Medicare's TEAM episode model for the family (18_team_functions.sql), when those functions exist
+    if fam_id is not null and to_regprocedure('pc_team_family_note(text)') is not null then
+      team := pc_team_family_note(fam_id);
+    end if;
     if c_med is null then
     c_med := pc_card('medicare', 'What does Medicare pay for procedures that use it?',
       case when fam_id is null then 'No procedure match' else pc_pay_range(drg_min, drg_max, true) || ' per inpatient case' end,
@@ -1077,7 +1093,7 @@ begin
                           || pc_usd(round(sup30)) || ' to ' || pc_usd(round(sup50)) || '.' else '' end
                 || case when n_fam > 1 then ' It is also mapped to ' || (n_fam - 1) || ' other procedure famil' || case when n_fam = 2 then 'y.' else 'ies.' end else '' end
                 || ' The link from product code ' || code || ' to this procedure is ' || coalesce(fam_status, 'draft') || '.'
-                || asc_txt end,
+                || asc_txt || coalesce(team->>'text', '') end,
       'The DRG payment is fixed per case, so the implant cost has to fit inside it with the room, the operating room and the nursing. Which DRG a case falls into depends on the approach, levels and complications.',
       case when fam_id is null then 'Which inpatient and outpatient procedures is this product used in?'
            else 'Medicare pays ' || pc_pay_range(drg_min, drg_max) || ' per case for ' || lower(fam_name)
@@ -1089,12 +1105,14 @@ begin
                       pc_fig(pc_usd(round(drg_min)), 'lowest DRG average'), pc_fig(pc_usd(round(drg_max)), 'highest DRG average'),
                       pc_fig(pc_num(fam_dis), 'Medicare discharges, ' || coalesce(data_yr::text, '')),
                       pc_fig(fam_status, 'mapping status'),
-                      case when asc_rated > 0 then pc_fig(pc_usd(round(asc_min)), 'lowest ASC rate, CY ' || asc_yr) end),
+                      case when asc_rated > 0 then pc_fig(pc_usd(round(asc_min)), 'lowest ASC rate, CY ' || asc_yr) end,
+                      case when (team->>'is_team')::boolean then team->'fig' end),
       'asks', pc_asks(c_med->>'ask',
         case when fam_id is not null then 'Which other implants complete the construct in a typical ' || lower(fam_name) || ' case, and are they on the same contract?' end,
         case when asc_top is not null and split_part(asc_top, '|', 3) <> '' then 'At an ASC, Medicare pays ' || split_part(asc_top, '|', 2) || ' for '
                   || split_part(asc_top, '|', 1) || ' and counts ' || split_part(asc_top, '|', 3)
-                  || ' of it as the device portion. What would the implants cost per case in an ASC?' end));
+                  || ' of it as the device portion. What would the implants cost per case in an ASC?' end,
+        team->>'ask'));
     end if;
   end if;
 
@@ -1248,6 +1266,7 @@ declare
   top_fam text; top_name text; n_fam int; drg_min numeric; drg_max numeric; data_yr int; rec5 int;
   r5 int; d5 int; i5 int; m5 int; top_prod text; countries text; n_nct int; first_yr int;
   top_unamb int; fam_list text; insp5 int; n_appr int;
+  vtrials jsonb;  -- Phase 7: registered trials it leads (19_trials.sql)
 begin
   select * into ven from pc_vendors where vendor_id = v;
   if ven.vendor_id is null then return jsonb_build_object('found', false, 'vendor_id', v); end if;
@@ -1338,6 +1357,9 @@ begin
   select count(distinct study_name), sum(amount), max(year) into n_st, st_amt, st_last
     from pc_op_research r
     where ((md = 'pit' and r.vendor_pit = v) or (md = 'current' and r.vendor_current = v)) and coalesce(r.ortho, true);
+  if to_regprocedure('pc_vendor_trials(text,integer)') is not null then
+    vtrials := pc_vendor_trials(v, 1);
+  end if;
 
   -- supply
   select count(*), count(*) filter (where devices > 0 and in_distribution = 0),
@@ -1413,7 +1435,13 @@ begin
       case when coalesce(n_st, 0) > 0 then n_st || ' industry-funded' else 'None in Open Payments' end,
       'info',
       case when coalesce(n_st, 0) > 0 then pc_money(st_amt) || ' in industry-funded orthopedic research across ' || n_st || ' studies since 2019, latest in ' || st_last || '.'
-           else 'No industry-funded orthopedic research in Open Payments from 2019 to 2025.' end,
+           else 'No industry-funded orthopedic research in Open Payments from 2019 to 2025.' end
+      || case when vtrials is null then ''
+              when (vtrials->>'total')::int > 0 then ' ClinicalTrials.gov lists ' || pc_count((vtrials->>'total')::int, 'musculoskeletal device trial', 'musculoskeletal device trials')
+                   || ' led by this company or companies it acquired: ' || (vtrials->>'active') || ' recruiting or active, '
+                   || (vtrials->>'completed') || ' completed (' || (vtrials->>'completed_with_results') || ' with results posted) and '
+                   || (vtrials->>'stopped') || ' terminated, withdrawn or suspended.'
+              else ' ClinicalTrials.gov lists no musculoskeletal device trial with this company as lead sponsor.' end,
       case when coalesce(n_st, 0) > 0 then 'Shows where the company is building evidence. Results matter more than spend.'
            else 'Evidence may come from predicate devices, published literature or studies outside Open Payments.' end,
       'Which studies cover the products you are proposing, and when will results be published?',
@@ -1462,7 +1490,8 @@ begin
            else pc_figs(pc_fig('0', 'orthopedic-scope payments, 2019 to 2025')) end));
   cards := jsonb_set(cards, '{4}', (cards->4) || jsonb_build_object('short', 'Industry studies', 'figs', pc_figs(
              case when n_st > 0 then pc_fig(pc_money(st_amt), 'industry-funded research since 2019') end,
-             pc_fig(pc_num(coalesce(n_st, 0)), 'industry-funded studies'), case when n_st > 0 then pc_fig(st_last::text, 'latest year') end)));
+             pc_fig(pc_num(coalesce(n_st, 0)), 'industry-funded studies'), case when n_st > 0 then pc_fig(st_last::text, 'latest year') end,
+             case when vtrials is not null then pc_fig(pc_num((vtrials->>'total')::numeric), 'registered musculoskeletal device trials it leads') end)));
   cards := jsonb_set(cards, '{5}', (cards->5) || jsonb_build_object('short', 'Distribution', 'figs', pc_figs(
              pc_fig(pc_num(coalesce(n_disc, 0)), 'brands with no devices in distribution'), pc_fig(pc_num(n_brands), case when cat_brands then 'GUDID brand entries (catalog-level)' else 'orthopedic brands in GUDID' end))));
   -- questions for the six cards above (the first is each card's ask)
@@ -1501,7 +1530,9 @@ begin
              'How do you set surgeon consulting and royalty rates?',
              case when coalesce(tot, 0) > 0 then 'Explain the ' || pc_money(tot) || ' in ' || latest || ' payments: how much was royalties, consulting, education, travel and meals?' end));
   cards := jsonb_set(cards, '{4,asks}', pc_asks(cards->4->>'ask',
-             case when coalesce(n_nct, 0) > 0 then n_nct || ' of your funded studies have ClinicalTrials.gov numbers. Which have results posted, and can you share any that are not yet published?' end));
+             case when coalesce(n_nct, 0) > 0 then n_nct || ' of your funded studies have ClinicalTrials.gov numbers. Which have results posted, and can you share any that are not yet published?' end,
+             case when (vtrials->>'total')::int > 0 then 'ClinicalTrials.gov lists ' || (vtrials->>'total') || ' musculoskeletal device trials you lead. Which cover the products you are proposing, and where are their results?' end,
+             case when (vtrials->>'stopped')::int > 0 then (vtrials->>'stopped') || ' of your registered trials were terminated, withdrawn or suspended. Did any involve the products you are proposing, and why did they stop?' end));
   cards := jsonb_set(cards, '{5,asks}', pc_asks(cards->5->>'ask'));
 
   -- Any recalls? (04_recall_functions.sql)

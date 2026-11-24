@@ -1,5 +1,33 @@
 # Changelog
 
+## Phase 7: TEAM, registered trials, category directories and site notes (2026-11-24)
+
+Everything a buyer-side competitor offers for free that fits OrthoParity's public-data, fixed-rule premise, built
+from the primary public sources.
+
+- **Medicare TEAM** (`pipeline/load_team.py`, `load-team`; `reference/team_triggers.csv`,
+  `reference/team_episode_families.csv`; `supabase/17_team_data.sql`, `supabase/18_team_functions.sql`): trigger
+  codes from 42 CFR 512.525(d), CMS preliminary target prices for 2026 (261 rows) and 2027 (324 rows) by MS-DRG and
+  census division, and 721 participating hospitals. Five procedure families are TEAM episodes; revision hip and knee
+  is not. The product Medicare box adds a TEAM sentence, the 2027 target price range as a figure and a question
+  (`supabase/05_decision_functions.sql`).
+- **Registered trials** (`pipeline/fetch_trials.py`, `fetch-trials`; `reference/trial_mesh_terms.csv`,
+  `reference/trial_sponsors.csv`; `supabase/19_trials.sql`): 77,365 device studies read; 77 exact links from 59
+  trials to 67 products; 872 musculoskeletal device trials linked to 145 parent companies by lead sponsor. Both
+  industry studies boxes now count registered trials and ask about them (`05`). A scan of all 17,589 cached 510(k)
+  summaries found no NCT number.
+- **Category directories** (`supabase/16_directory.sql`): every orthopedic FDA record by product code, 291 codes in
+  11 segments, with companies by parent and GUDID listing counts.
+- **Site notes** (`supabase/20_site_notes.sql`): a public corrections log (13 dated corrections from this changelog)
+  and release notes.
+- `config.ini`: `[cms_team]`. `orthoparity.py`: `load-team` (Medicare group) and `fetch-trials` (new `trials` group).
+- `tests/test_phase7.py`: 6 tests on synthetic files. 143 pass.
+- New tables add about 3 MB to the database. Website pages (directories, TEAM lookup and arithmetic, trial lists,
+  packet check, corrections, release notes, audience pages) are Lovable backlog L14 to L19.
+- After the live check: `16_directory.sql` drops a field name from the directory note and spells out FDA's class
+  codes (f reads HDE, U Unclassified, N Not classified); `pipeline/load_team.py` writes the TEAM read rules Lovable's
+  security scan set live (every row stays public).
+
 ## Phase 6: compare fixes, ASC rates and part-number lookup (2026-11-23)
 
 - `supabase/03_vendor_functions.sql`, `pc_vendor_compare`: products with no FDA product code on file stay out of the

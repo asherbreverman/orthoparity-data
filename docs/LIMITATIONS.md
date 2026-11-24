@@ -174,6 +174,33 @@ the data can't support is part of the method.
   renumbered more on October 1, 2026 (MS-DRG v44): knee surgery with an infection diagnosis moved from DRGs 485 to 487
   to DRG 400, and hip or knee revision moved from 466 to 468 to DRG 449. Today's DRG list won't match these numbers.
 
+## Medicare TEAM model
+
+- **Target prices are CMS's preliminary regional prices,** in standardized dollars, before CMS adjusts them for each
+  hospital's patients. They cover all Medicare spending in the episode, not a device price or a payment.
+- **CMS doesn't publish hospital-specific target prices or which track each hospital chose.** Both read NOT FOUND.
+- **The participant list changes quarterly.** The site uses CMS's list as of August 18, 2026.
+- **The family links** to TEAM episodes are drafted from the regulation and CMS's DRG mapping workbook and await
+  professional review.
+- **The TEAM arithmetic page** works only on the figures a user types. It leaves out quality adjustment, risk
+  adjustment and stop-gain and stop-loss limits.
+
+## Registered trials
+
+- **Most registry records name no FDA number,** so most products show no linked trial even when they were studied.
+- **Company counts follow the lead sponsor.** Trials led by investigators or hospitals that use a company's device
+  are not counted, and a sponsor name the vendor registry doesn't know is not counted.
+- **Orthopedic scope comes from NLM's MeSH terms** for the trial's conditions; a mislabeled or unlabeled condition
+  can put a trial in or out.
+- **A registered trial is a fact about a study's design and status,** not evidence that a device works or doesn't.
+  Published papers are not included.
+
+## Category directories
+
+- **A listing is an FDA record.** It doesn't show that a product is sold today, that parts fit together or that one
+  product is better than another.
+- **88 records have no product code on file** and appear only in search.
+
 ## Scope of the project
 
 OrthoParity is an independent research tool built from public FDA and CMS data, provided as is. It is not

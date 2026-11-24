@@ -76,6 +76,10 @@ MAUDE_STEPS = [
     ("fetch-maude", "pipeline.fetch_maude",
      "Count FDA adverse event reports (MAUDE) for every orthopedic 510(k) from openFDA (free API key recommended)."),
 ]
+TRIAL_STEPS = [
+    ("fetch-trials", "pipeline.fetch_trials",
+     "Download device trials from ClinicalTrials.gov and link them to devices (exact FDA numbers) and companies (lead sponsor)."),
+]
 APPROVAL_STEPS = [
     ("load-approvals", "pipeline.load_approvals",
      "Add FDA premarket approvals (PMA) and humanitarian device exemptions (HDE) with their supplements, sites, recalls and reports."),
@@ -85,6 +89,8 @@ MEDICARE_STEPS = [
      "Build the procedure view from CMS Medicare inpatient and outpatient hospital payments (national, no charges)."),
     ("load-asc", "pipeline.load_asc",
      "Look up Medicare ASC payment rates (CY 2027) for each procedure family's key codes and write supabase/14_asc_rates.sql."),
+    ("load-team", "pipeline.load_team",
+     "Load Medicare's TEAM model (trigger codes, 2026-2027 regional target prices, participant hospitals) into supabase/17_team_data.sql."),
 ]
 TOOL_STEPS = [
     ("lookup", "tools.lookup", "Look up one device's ancestor chain from the command line."),
@@ -111,6 +117,7 @@ GROUPS = {
     "addon": ADD_ON_STEPS,
     "medicare": MEDICARE_STEPS,
     "approvals": APPROVAL_STEPS,
+    "trials": TRIAL_STEPS,
     "site-data": [s for s in PREDICATE_STEPS if s[0] == "export-predicates"]
                  + [s for s in PAYMENT_STEPS if s[0] == "export-payments"] + MEDICARE_STEPS,
     "all": PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + MAUDE_STEPS + SUPPLIER_STEPS + ADD_ON_STEPS + MEDICARE_STEPS
@@ -118,7 +125,7 @@ GROUPS = {
 }
 STEPS = {name: (module, what) for name, module, what
          in PREDICATE_STEPS + PAYMENT_STEPS + RECALL_STEPS + MAUDE_STEPS + SUPPLIER_STEPS + ADD_ON_STEPS + MEDICARE_STEPS
-         + APPROVAL_STEPS + TOOL_STEPS}
+         + APPROVAL_STEPS + TRIAL_STEPS + TOOL_STEPS}
 
 
 def show_help() -> None:
@@ -129,6 +136,7 @@ def show_help() -> None:
                          ("Medicare add-on payments", ADD_ON_STEPS),
                          ("Medicare procedure view", MEDICARE_STEPS),
                          ("FDA approvals (PMA and HDE)", APPROVAL_STEPS),
+                         ("Registered clinical trials", TRIAL_STEPS),
                          ("Tools", TOOL_STEPS)):
         print(f"\n{title}:")
         for name, _, what in steps:

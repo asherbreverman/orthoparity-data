@@ -492,3 +492,61 @@ the version or model number as printed, the FDA number, the brand and whether th
   across product lines, and GUDID records what each company submitted.
 - GUDID is company-reported. A part number missing here may still be sold under that 510(k).
 
+## 18d. Medicare TEAM model (`load-team`, `supabase/17_team_data.sql`, `supabase/18_team_functions.sql`)
+
+Sources: CMS's TEAM model page (Preliminary Target Prices PY1 and PY2, the Participant List as of August 18, 2026,
+and the TEAM DRG Mapping Specifications FY2020 to FY2027), 42 CFR 512.525(d) and 512.540 (eCFR, amended effective
+October 1, 2026), and CMS's Participation Tracks fact sheet.
+
+- **Trigger codes** (`reference/team_triggers.csv`): copied from 42 CFR 512.525(d): 32 MS-DRGs and 8 HCPCS codes in 5
+  episode categories. Each HCPCS code is priced under the MS-DRG 512.540 names. The step stops if CMS's target price
+  workbooks price an MS-DRG the regulation doesn't list, or (for 2027) miss one it does.
+- **Families** (`reference/team_episode_families.csv`): which procedure families are TEAM episodes and which MS-DRGs
+  price them. Primary hip and knee (469, 470), hip replacement for fracture (521, 522), hip and femur fixation (480 to
+  482) and cervical fusion (471 to 473) use the same numbers as the family. Lumbar and thoracolumbar fusion uses the
+  2024 numbers 453 to 460; CMS's DRG mapping workbook (Table 1) shows every one of them renumbered into TEAM spinal
+  fusion MS-DRGs (402, 426 to 430, 447, 448, 450, 451 in FY 2025; 523 to 525 in FY 2027), so the whole family is a
+  TEAM episode. Revision hip and knee (466 to 468) is not. Drafted by Claude at the project owner's direction,
+  pending review.
+- **Target prices:** CMS's preliminary price for each MS-DRG and census division, with benchmark, trend and
+  discount, for 2026 and 2027. CMS's PY1 file repeats 35 rows word for word; each is kept once, and the step stops if
+  a repeated row differs.
+- **Participants:** 721 hospitals (711 mandatory, 10 voluntary) by CCN with CBSA and dates. A hospital's census
+  division comes from its state.
+- **On the site:** the Medicare box adds one sentence, one figure and one question for a TEAM family; procedure pages
+  show the codes and prices; `/team` looks up hospitals and codes; `/team/calculator` is browser-only arithmetic on
+  the user's own figures.
+- **Not published by CMS, so NOT FOUND:** hospital-specific target prices and each hospital's track.
+
+## 18e. Registered clinical trials (`fetch-trials`, `supabase/19_trials.sql`)
+
+Source: the ClinicalTrials.gov API v2, every study with a device intervention (77,365 on November 24, 2026).
+
+- **Device links, exact only:** a trial links to a product when its registry record writes the product's FDA number
+  (K, DEN, P or H) in its title, summary, description or interventions and the number is in OrthoParity (43 links),
+  or when an Open Payments research record names both the 510(k) and the trial's NCT number (34 links): 77 links, 59
+  trials, 67 products. A scan of all 17,589 cached 510(k) summary PDFs found no NCT number, so summaries are not a
+  source.
+- **Company links:** the lead sponsor's name, with case, punctuation and legal suffixes removed, must equal a name
+  the company is known by in the vendor registry, and the sponsor must be an industry sponsor; or the sponsor is
+  listed in `reference/trial_sponsors.csv` (7 business unit names, drafted by Claude, pending review). A name that
+  matches more than one parent company is left out. Counts roll up to today's parent company.
+- **Orthopedic scope:** company counts include only trials whose MeSH conditions (or their ancestors) include one of
+  the 10 terms in `reference/trial_mesh_terms.csv`: musculoskeletal diseases, bone fractures, spinal diseases and
+  limb, tendon and sprain injuries. 5,598 device trials qualify; 872 are linked to 145 parent companies.
+- **Not linked:** 407 industry sponsors of musculoskeletal device trials (661 trials) match no company; most are
+  companies outside OrthoParity (dental implants, physical therapy apps). They're listed in
+  `outputs/trials/unmatched_industry_sponsors.csv` for review.
+- A trial's status and "results posted" come from ClinicalTrials.gov as of the download. Published papers are not
+  included.
+- **No personal names:** a sponsor that is a person (sponsor class "individual", a title such as Dr or Prof, or no
+  organization word in the name) is stored as "Individual investigator (name not shown)", and a text excerpt that
+  names a person is left blank. Investigator and contact fields are never downloaded.
+
+## 18f. Category directories (`supabase/16_directory.sql`)
+
+Every orthopedic FDA record with a product code (18,267 of 18,355; 88 have none), grouped by FDA product code and by
+the reviewed segment in the product code dictionary. Each row shows identity facts only: number, pathway, name, the
+company on the FDA record, today's parent, decision date and GUDID brand and listing counts. The directory lists;
+it doesn't rank. Recalls and adverse events stay on product pages, because their links to FDA numbers are partial.
+
