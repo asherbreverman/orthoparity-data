@@ -134,9 +134,10 @@ create or replace function pc_team_hospital(q text, lim int default 25) returns 
                          where t.py = 2 and t.region = m.region and tt.category_id in ('LEJR', 'SHFFT', 'SPINE')))
         order by hospital) from m), '[]'::jsonb),
     'note', case when length((select v from s)) < 2 then 'Type at least 2 characters: a hospital name, a city, a two-letter state or a 6-digit CCN.'
-                 when not exists (select 1 from m) then 'NOT FOUND on CMS''s TEAM participant list as of '
+                 when not exists (select 1 from m) then 'No TEAM hospital''s name, metro area or CCN matches "' || (select v from s)
+                      || '" on CMS''s participant list as of '
                       || (select to_char(max(as_of), 'FMMonth FMDD, YYYY') from pc_team_participant)
-                      || '. A hospital not on the list is not in TEAM for now; CMS updates the list quarterly.' end,
+                      || '. Try a two-letter state, such as AZ, to see every TEAM hospital in a state. A hospital not on the list is not in TEAM for now; CMS updates the list quarterly.' end,
     'as_of', (select max(as_of) from pc_team_participant),
     'total', (select count(*) from pc_team_participant),
     'source_url', 'https://www.cms.gov/team-model-participant-list',

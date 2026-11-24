@@ -1,5 +1,17 @@
 # Changelog
 
+## Phase 8: wording fixes from the persona stress test (2026-11-24)
+
+SQL-only fixes behind the site redesign; no new tables, no change in database size.
+
+- **NOT FOUND everywhere** (`supabase/05_decision_functions.sql`): the indications badge reads `NOT FOUND` (or
+  `NOT FOUND yet (new record)`) instead of "Not on file", and PMA pages read "PMA, approval date NOT FOUND".
+- **Recalls** (`supabase/04_recall_functions.sql`): the company recall badge reads "39 listed open by FDA".
+- **Procedure worksheet** (`supabase/08_procedure_functions.sql`): the first question's example now fits each
+  procedure family. Hip and knee pages no longer show a spine example. `pc_procedure_worksheet` takes the family ID.
+- **TEAM lookup** (`supabase/18_team_functions.sql`): a search with no match names what it searched (name, metro area,
+  CCN) and suggests a two-letter state.
+
 ## Phase 7: TEAM, registered trials, category directories and site notes (2026-11-24)
 
 Everything a buyer-side competitor offers for free that fits OrthoParity's public-data, fixed-rule premise, built

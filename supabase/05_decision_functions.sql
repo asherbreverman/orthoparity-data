@@ -523,7 +523,7 @@ begin
     c_nov := pc_card('novelty', 'Is it new?',
       case when lbl = 'HDE' then 'Humanitarian device (HDE)'
            when coalesce((appr->>'original_on_file')::boolean, true) then 'PMA approval, ' || coalesce(left(appr->>'decision_date', 4), 'year not on file')
-           else 'PMA approval, date not on file' end,
+           else 'PMA, approval date NOT FOUND' end,
       'info',
       case when lbl = 'HDE'
            then 'FDA approved it under a humanitarian device exemption (HDE)' || case when coalesce((appr->>'original_on_file')::boolean, true) then coalesce(' on ' || to_char((appr->>'decision_date')::date, 'Mon FMDD, YYYY'), '') else '' end
@@ -765,8 +765,8 @@ begin
   sim := case when ifu_clean is not null and pc_clean_ifu(ind->'predicate'->>'ifu_text') is not null
               then nullif(ind->>'similarity', '')::numeric end;
   c_ind := pc_card('indications', 'What is it cleared to treat?',
-    case when not (ind->>'found')::boolean and is_new then 'Not on file yet'
-         when not (ind->>'found')::boolean then 'Not on file'
+    case when not (ind->>'found')::boolean and is_new then 'NOT FOUND yet (new record)'
+         when not (ind->>'found')::boolean then 'NOT FOUND'
          when ifu_clean is null then 'Couldn''t read cleanly'
          when sim is null then 'On file'
          when sim >= 0.9 then 'Same wording as predicate'
@@ -797,7 +797,7 @@ begin
   if is_appr then
     c_ind := c_ind || jsonb_build_object('question', 'What is it approved to treat?');
     if not (ind->>'found')::boolean or ifu_clean is null then
-      c_ind := c_ind || jsonb_build_object('badge', 'Not on file',
+      c_ind := c_ind || jsonb_build_object('badge', 'NOT FOUND',
         'finding', 'NOT FOUND: FDA''s approval order statement for this ' || lbl || ' has no indications text on file. The Summary of Safety and Effectiveness Data (SSED) on FDA''s ' || lbl || ' page has them.',
         'ask', 'Can you provide the approved indications for this device?',
         'asks', jsonb_build_array('Can you provide the approved indications for this device?'));
@@ -1167,7 +1167,7 @@ begin
                  when coalesce(pcode->>'device_class', '3') in ('1', '2') then 'A device approved through PMA'
                  else 'A Class III device approved through PMA' end
             || case when coalesce((appr->>'original_on_file')::boolean, true) then coalesce(' in ' || left(appr->>'decision_date', 4), '')
-                    else ' (original approval date not on file)' end
+                    else ' (original approval date NOT FOUND)' end
             || case when lbl = 'PMA' and coalesce(pcode->>'device_class', '3') in ('1', '2')
                     then ' (product code ' || code || ' is now Class ' || case pcode->>'device_class' when '1' then 'I' else 'II' end || ')' else '' end
             || case when coalesce((appr->>'supplements_shown')::int, 0) > 0 then ' with ' || pc_count((appr->>'supplements_shown')::int, 'design, labeling, indication or study change', 'design, labeling, indication or study changes') || ' since,' else ',' end

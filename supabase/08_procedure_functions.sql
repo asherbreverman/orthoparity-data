@@ -51,10 +51,24 @@ create or replace function pc_procedure_notes() returns jsonb language sql immut
 $$;
 
 -- questions for a hospital team to work through with its own numbers
-create or replace function pc_procedure_worksheet() returns jsonb language sql immutable as $$
+drop function if exists pc_procedure_worksheet();
+create or replace function pc_procedure_worksheet(fam text default null) returns jsonb language sql immutable as $$
   select jsonb_build_array(
     jsonb_build_object('step', 1, 'question', 'Which implants does a typical case use, and how many of each?',
-      'hint', 'For example: pedicle screws, rods, set screws, an interbody cage.'),
+      'hint', case fam
+        when 'hip_knee_replacement' then 'For example: a femoral component, a tibial tray, an insert and a patella; or an acetabular shell, a liner, a femoral stem and a head.'
+        when 'revision_hip_knee' then 'For example: revision stems, augments or cones, a constrained insert, an acetabular shell and a liner.'
+        when 'hip_fracture_replacement' then 'For example: a femoral stem, a unipolar or bipolar head, and cement.'
+        when 'hip_femur_fixation' then 'For example: an intramedullary nail, or a sliding hip screw and side plate, with lag and locking screws.'
+        when 'shoulder_elbow_replacement' then 'For example: a humeral stem, a glenoid baseplate and glenosphere or a glenoid component, and screws.'
+        when 'thoracolumbar_fusion' then 'For example: pedicle screws, rods, set screws, an interbody cage.'
+        when 'cervical_fusion' then 'For example: an interbody cage, an anterior plate and screws.'
+        when 'spine_surgery_no_fusion' then 'For example: an interspinous device, a disc replacement or graft material, if used.'
+        when 'lower_extremity_humerus' then 'For example: a nail or plate, locking and cortical screws.'
+        when 'foot_soft_tissue' then 'For example: plates, screws, staples or anchors.'
+        when 'knee_surgery_no_replacement' then 'For example: anchors, screws, grafts or plates.'
+        when 'upper_extremity_no_replacement' then 'For example: plates, screws, anchors or pins.'
+        else 'For example: the main implants, the screws, plates or pins that hold them, and any cement or graft.' end),
     jsonb_build_object('step', 2, 'question', 'What does the hospital pay per unit for each, and what does the construct cost per case?',
       'hint', 'Units times price, added up across the construct.'),
     jsonb_build_object('step', 3, 'question', 'What else goes into the case?',
@@ -147,7 +161,7 @@ begin
                d.active_vendors desc, d.product_code)
       from pc_procedure_devices d where d.family_id = p.family_id), '[]'::jsonb),
     'evidence', coalesce((select jsonb_agg(to_jsonb(e)) from pc_supply_evidence e), '[]'::jsonb),
-    'worksheet', pc_procedure_worksheet(),
+    'worksheet', pc_procedure_worksheet(p.family_id),
     'vendor_window', jsonb_build_object('from', (pc_data_end() - interval '5 years')::date, 'to', pc_data_end()),
     'notes', pc_procedure_notes())
   into res;
@@ -211,7 +225,7 @@ returns jsonb language sql stable as $$
     'procedures_total', (select count(*) from pc_procedures))
 $$;
 
-grant execute on function pc_procedure_notes(), pc_procedure_worksheet(), pc_code_vendors(text, int), pc_procedure_list(),
+grant execute on function pc_procedure_notes(), pc_procedure_worksheet(text), pc_code_vendors(text, int), pc_procedure_list(),
   pc_procedure(text, int), pc_code_procedures(text), pc_device_procedures(text), pc_vendor_procedures(text, text)
   to anon, authenticated;
 notify pgrst, 'reload schema';

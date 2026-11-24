@@ -111,7 +111,7 @@ begin
             group by root_cause order by count(*) desc limit 1)
     into n5, c1, open_n, n_all, cause from ev;
   return pc_card('recalls', 'What is their recall history?',
-    case when open_n > 0 then open_n || ' listed open' when n5 > 0 then n5 || ' in five years' else 'None in five years' end,
+    case when open_n > 0 then open_n || ' listed open by FDA' when n5 > 0 then n5 || ' in five years' else 'None in five years' end,
     case when c1 > 0 or open_n > 0 then 'attention' else 'info' end,
     case when n_all = 0 then 'No FDA recalls linked to this vendor since 2002.'
          else n5 || ' recall event' || case when n5 = 1 then '' else 's' end || ' in the last five years'
