@@ -57,6 +57,10 @@ python orthoparity.py payments
 6. `validate-payments` writes `outputs/payments_validation.md`. Read it before you publish.
 7. `repair-text` restores lost trademark signs and accents.
 8. `export-payments` writes the vendor and payment CSVs to `outputs/site_data/`.
+9. `gudid-device-fields` reads packaged-sterile and MRI safety status from the same GUDID XML parts
+   (resumable; about 10 minutes).
+10. `export-catalog` writes the part-number lookup (`pc_catalog_*.csv`). Run `load-approvals` first so FDA approvals
+    count as on the site.
 
 ## 4. Download recalls
 

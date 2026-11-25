@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import gzip
 import zipfile
 
 import pytest
@@ -65,24 +66,65 @@ def test_catalog_export(tmp_path):
     from pipeline import export_catalog
     con = duckdb.connect()
     con.execute("""create table gudid_devices as select * from (values
-        ('D1', 'CAT-001', 'CAT-001', 'Brand A', 'In Commercial Distribution'),
-        ('D2', 'CAT-001', 'MODEL 9', 'Brand A', 'Not in Commercial Distribution'),
-        ('D3', 'N/A', 'AB', 'Brand B', 'In Commercial Distribution'),
-        ('D4', 'X-777', null, 'Brand C', 'In Commercial Distribution'))
-        t(primary_di, catalog_number, version_model, brand, distribution_status)""")
+        ('D1', 'CAT-001', 'CAT-001', 'Brand A', 'Co A', 'In Commercial Distribution', '1', 'false', 'HWC'),
+        ('D2', 'CAT-001', 'MODEL 9', 'Brand A', 'Co A', 'Not in Commercial Distribution', '1', 'false', 'HWC'),
+        ('D3', 'N/A', 'AB', 'Brand B', 'Co B', 'In Commercial Distribution', '1', 'false', 'HWC'),
+        ('D4', 'X-777', null, 'Brand C', 'Co C', 'In Commercial Distribution', '1', 'false', 'HWC'),
+        ('D5', 'SCR-45', null, 'Brand D', 'Co D', 'In Commercial Distribution', '1', 'true', 'HWC'),
+        ('D6', 'SCR-45', null, 'Brand D', 'Co D', 'In Commercial Distribution', '5', 'true', 'HWC'),
+        ('D7', 'DENT-1', null, 'Brand E', 'Co E', 'In Commercial Distribution', '1', 'false', 'ELM'),
+        ('D8', 'ODD-88', null, 'Brand F', 'Co F', 'In Commercial Distribution', '1', 'false', 'ZZZ'),
+        ('D9', 'PMA-9', null, 'Brand G', 'Co G', 'In Commercial Distribution', '1', 'false', 'OJZ'))
+        t(primary_di, catalog_number, version_model, brand, company, distribution_status, device_count,
+          premarket_exempt, product_codes)""")
     con.execute("""create table gudid_submissions as select * from (values
-        ('D1', 'K111111', ''), ('D2', 'K111111', ''), ('D3', 'K111111', ''), ('D4', 'K999999', ''))
+        ('D1', 'K111111', ''), ('D2', 'K111111', ''), ('D3', 'K111111', ''), ('D4', 'K999999', ''),
+        ('D8', 'K111111', ''), ('D9', 'P123456', 'S001'))
         t(primary_di, submission_number, supplement_number)""")
+    con.execute("""create table gudid_device_fields as select * from (values
+        ('D1', 'true', 'false', 'MR Conditional'), ('D2', 'true', 'false', 'MR Conditional'),
+        ('D5', 'false', 'true', 'MR Safe'), ('D6', 'false', 'true', 'MR Unsafe'))
+        t(primary_di, sterile, sterilize_before_use, mri_safety)""")
     portfolio = tmp_path / "pc_portfolio_510k.csv"
-    portfolio.write_text("knumber,vendor_id\nK111111,v1\n", encoding="utf-8")
+    portfolio.write_text("knumber,vendor_id,product_code\nK111111,v1,HWC\n", encoding="utf-8")
+    (tmp_path / "pc_approvals.csv").write_text("number,product_code\nP123456,OJZ\n", encoding="utf-8")
     site, out = tmp_path / "site", tmp_path / "out"
     out.mkdir()
     stats = export_catalog.export(con, portfolio, site, out)
     with open(site / "pc_catalog_1.csv", newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    idents = {(r["ident"], r["n"]) for r in rows}
+        rows = {(r["ident"], r["n"]): r for r in csv.DictReader(f)}
     # CAT-001 merges across D1 and D2 and stays in distribution; MODEL 9 is its own row; N/A and "AB" are dropped;
-    # X-777 belongs to a number that isn't on the site
-    assert idents == {("CAT-001", "K111111"), ("MODEL 9", "K111111")}
-    assert next(r for r in rows if r["ident"] == "CAT-001")["in_dist"] == "true"
-    assert stats["rows"] == 2 and (site / "pc_catalog_brand.csv").exists()
+    # X-777 keeps its FDA number even though it isn't on the site; SCR-45 lists no FDA number; DENT-1 is not orthopedic;
+    # ODD-88 has a non-orthopedic product code in GUDID but lists a site FDA number, so it stays
+    assert set(rows) == {("CAT-001", "K111111"), ("MODEL 9", "K111111"), ("X-777", "K999999"), ("SCR-45", ""),
+                         ("ODD-88", "K111111"), ("PMA-9", "P123456")}  # FDA approvals count as on the site
+    cat = rows[("CAT-001", "K111111")]
+    assert (cat["in_dist"], cat["n_di"], cat["units"], cat["sterile"], cat["mri"]) == ("true", "2", "1", "true", "2")
+    assert cat["pc"] == "" and cat["company_id"] == "" and cat["exempt"] == ""
+    other = rows[("X-777", "K999999")]
+    assert other["pc"] == "HWC" and other["company_id"] != "" and other["sterile"] == "" and other["exempt"] == ""
+    none = rows[("SCR-45", "")]
+    # two device IDs that disagree: units blank, MRI 9 (mixed), sterile false for both, marked exempt
+    assert (none["n_di"], none["units"], none["mri"], none["sterile"], none["exempt"]) == ("2", "", "9", "false", "true")
+    assert stats["rows"] == 6 and stats["by_kind"] == {"site": 4, "other": 1, "none": 1}
+    assert (site / "pc_catalog_brand.csv").exists() and (site / "pc_catalog_company.csv").exists()
+    report = (out / "Catalog_Report.txt").read_text(encoding="utf-8")
+    assert "listing no FDA number: 2 (2 marked premarket exempt)" in report
+
+
+def test_gudid_device_fields(tmp_path):
+    from pipeline import gudid_device_fields as g
+    xml = tmp_path / "FULLDownload_Part1_Of_1.xml"
+    xml.write_text("""<?xml version="1.0"?><gudid xmlns="http://www.fda.gov/cdrh/gudid">
+      <device><identifiers><identifier><deviceId>00811111</deviceId><deviceIdType>Package</deviceIdType></identifier>
+        <identifier><deviceId>00822222</deviceId><deviceIdType>Primary</deviceIdType></identifier></identifiers>
+        <MRISafetyStatus>MR Conditional</MRISafetyStatus>
+        <sterilization><deviceSterile>true</deviceSterile><sterilizationPriorToUse>false</sterilizationPriorToUse></sterilization></device>
+      <device><identifiers><identifier><deviceId>00833333</deviceId><deviceIdType>Primary</deviceIdType></identifier></identifiers></device>
+    </gudid>""", encoding="utf-8")
+    name, n = g.parse_part(str(xml), str(tmp_path))
+    assert (name, n) == ("FULLDownload_Part1_Of_1", 2)
+    with gzip.open(tmp_path / "FULLDownload_Part1_Of_1.fields.csv.gz", "rt", encoding="utf-8") as f:
+        got = list(csv.reader(f))
+    assert got == [g.COLS, ["00822222", "true", "false", "MR Conditional"], ["00833333", "", "", ""]]
+    assert g.parse_part(str(xml), str(tmp_path)) == (name, 2)  # resumable

@@ -1,5 +1,33 @@
 # Changelog
 
+## Phase 9: part numbers without a site FDA number, device facts, search groups, sites by country, ASC column, compare five (2026-11-24)
+
+Sized on a local copy before anything touched Supabase: the part tables grow from about 83 MB to about 161 MB, so the
+database goes from about 223 MB to about 300 MB. Everything else is functions over data already loaded.
+
+- **Part lookup covers all orthopedic GUDID records** (`pipeline/export_catalog.py`, `supabase/15_part_search.sql`):
+  every GUDID record filed under one of the site's 291 orthopedic product codes, whatever FDA number it lists, plus
+  every record that lists a site FDA number (as before). 1,682,488 rows instead of 993,975; 1,361,618 distinct part
+  numbers instead of 805,278. Records with no FDA number show "FDA number NOT FOUND in GUDID" and say whether the
+  company marked them premarket exempt. FDA approvals (PMA, HDE) now count as on the site.
+- **Device facts on every part row** (new step `gudid-device-fields`, `pipeline/gudid_device_fields.py`): device IDs on
+  the row, units per package, packaged sterile and MRI safety, shown when every device ID on the row agrees.
+- **`pc_catalog` layout**: fixed-width columns first (about 10 MB smaller); the first run of `15` replaces the old
+  4-column table, and the import replaces every row because brand IDs change. New table `pc_catalog_company`.
+- **Search grouped by brand and owner** (`supabase/21_phase9_functions.sql`, `pc_search_groups`): whole-word matches
+  in the FDA device name or GUDID brand, grouped by today's parent company, plus matches inside another word.
+- **Sites by country** (`pc_code_sites`): registered establishments that list a record under a product code, by
+  country, with the count that make or sterilize.
+- **ASC rates on the procedures list** (`supabase/08_procedure_functions.sql`): `pc_procedure_list()` returns each
+  family's CY 2027 ASC rate range and codes (`pc_procedure_asc_summary`).
+- **Compare 2 to 5 companies** (`pc_vendor_compare_many`): product codes held by all, some or one, and Open Payments
+  totals for the latest year every company reported. Counts only.
+- **First-load speed** (`pc_cache_warm`): fills the page cache for the 25 largest companies and 100 newest products in
+  the busiest product codes after an update. The live database answered a one-row read in 0.5 to 10 seconds during
+  the Phase 9 check while the network took under 0.1 second, so most of the delay is the Free plan's server.
+- Tests: `test_catalog_export` covers all three kinds of part row and the device facts; `test_gudid_device_fields`
+  covers the XML reader.
+
 ## Phase 8 fixes from the live review (2026-11-24)
 
 From a full review of the live site after the redesign (doc "OrthoParity live site review, after Phase 8"). No new tables.

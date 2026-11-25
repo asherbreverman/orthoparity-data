@@ -478,13 +478,22 @@ addendum isn't for the year in `[cms_asc] RATE_YEAR`.
 
 ## 18c. Part-number lookup (`export-catalog`, `supabase/15_part_search.sql`)
 
-Source: the FDA GUDID full release (November 2026), already indexed by `index-gudid`. For every GUDID device record
-whose premarket submission is a 510(k), De Novo, PMA or HDE number on the site, the lookup keeps the catalog number and
-the version or model number as printed, the FDA number, the brand and whether the record is in commercial distribution.
+Source: the FDA GUDID full release (November 2026), indexed by `index-gudid`, plus `gudid-device-fields` for
+packaged-sterile and MRI safety status. The lookup covers every GUDID device record that lists an FDA number on the
+site (a 510(k), De Novo, PMA or HDE), plus, since Phase 9, every record filed under one of the site's 291 orthopedic
+product codes whatever FDA number it lists. For each it keeps the catalog number and the version or model number as
+printed, the FDA number (or none), the brand and whether the record is in commercial distribution.
 
-- 993,975 rows (805,278 distinct part numbers) from 945,631 linked GUDID records. 7,550 of the site's 18,224 FDA numbers
-  have GUDID records. The rest have none that names them: GUDID records began in 2014, and a product no longer sold
-  often has no record.
+- 1,682,488 rows (1,361,618 distinct part numbers) from 1,461,001 GUDID device IDs, November 2026 release:
+  - 808,046 device IDs list an FDA number on the site (996,831 rows; 772,414 distinct part numbers);
+  - 1,963 list only an FDA number outside the site's orthopedic set (1,796 rows). The page shows that number;
+  - 650,992 list no FDA number at all (683,861 rows). The page shows "FDA number NOT FOUND in GUDID" and says whether
+    the company marked the device premarket exempt (280,255 device IDs) or listed no premarket submission. GUDID lets
+    a company leave the submission out; OrthoParity never guesses one from the brand or product code.
+- Before Phase 9 the lookup held only the first group, so 43% of orthopedic part numbers in GUDID returned no match.
+- Device facts, shown only when every device ID on the row agrees: device IDs on the row, units in the base package
+  (`deviceCount`), packaged sterile (`deviceSterile`) and MRI safety status (`MRISafetyStatus`). When the device IDs
+  disagree, units and sterile stay blank and MRI safety reads "Differs across device IDs".
 - Identical rows merge. Identifiers with fewer than 3 letters or digits and placeholders (N/A, NONE, TBD) are dropped.
 - Search ignores case, spaces and punctuation ("213-65-05" finds "21365 05"). Exact matches come first, then part
   numbers that start with what was typed. At least 3 letters or digits are required.

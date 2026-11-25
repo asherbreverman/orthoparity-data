@@ -101,6 +101,23 @@ returns jsonb language sql stable as $$
 $$;
 
 -- every procedure family, for the procedures index page
+-- Phase 9: one family's ASC rates as {low, high, year, codes: [...]}; null when the family has no loaded ASC code.
+-- Reads pc_procedure_asc only when 14_asc_rates.sql has created it, so this file still runs before 14.
+create or replace function pc_procedure_asc_summary(fam text)
+returns jsonb language plpgsql stable as $$
+declare r jsonb;
+begin
+  if to_regclass('public.pc_procedure_asc') is null then return null; end if;
+  execute $q$
+    select case when count(*) = 0 then null else jsonb_build_object(
+      'low', min(asc_rate), 'high', max(asc_rate), 'year', max(rate_year),
+      'codes', jsonb_agg(jsonb_build_object('cpt', cpt, 'procedure', procedure, 'asc_rate', asc_rate,
+                                            'device_portion', device_portion, 'status', asc_status) order by sort_order)) end
+      from pc_procedure_asc where family_id = $1 and asc_rate is not null $q$
+    into r using fam;
+  return r;
+end $$;
+
 create or replace function pc_procedure_list()
 returns jsonb language sql stable as $$
   select jsonb_build_object(
@@ -109,8 +126,12 @@ returns jsonb language sql stable as $$
         'drgs', string_to_array(p.drgs, '|'), 'flagship', p.flagship = 'yes', 'data_year', p.data_year,
         'discharges', p.discharges, 'hospitals', p.hospitals, 'medicare_pays', p.medicare_pays,
         'patient_other_pays', p.patient_other_pays, 'total_payment', p.total_payment,
-        'device_categories', (select count(*) from pc_procedure_devices d where d.family_id = p.family_id))
+        'device_categories', (select count(*) from pc_procedure_devices d where d.family_id = p.family_id),
+        -- Phase 9: CY 2027 ASC national rates for the family's key procedure codes (null when none are loaded)
+        'asc', pc_procedure_asc_summary(p.family_id))
       order by p.sort_order) from pc_procedures p), '[]'::jsonb),
+    'asc_note', 'ASC rates are CMS CY 2027 national rates before wage adjustment, for the 12 procedure codes loaded so '
+                || 'far. A range spans the loaded codes in the family. Hospital outpatient payments are not shown yet.',
     'notes', pc_procedure_notes())
 $$;
 
@@ -225,7 +246,7 @@ returns jsonb language sql stable as $$
     'procedures_total', (select count(*) from pc_procedures))
 $$;
 
-grant execute on function pc_procedure_notes(), pc_procedure_worksheet(text), pc_code_vendors(text, int), pc_procedure_list(),
+grant execute on function pc_procedure_notes(), pc_procedure_worksheet(text), pc_code_vendors(text, int), pc_procedure_list(), pc_procedure_asc_summary(text),
   pc_procedure(text, int), pc_code_procedures(text), pc_device_procedures(text), pc_vendor_procedures(text, text)
   to anon, authenticated;
 notify pgrst, 'reload schema';

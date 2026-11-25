@@ -55,8 +55,10 @@ PAYMENT_STEPS = [
      "Restore trademark signs, dashes and accented letters lost in the source files."),
     ("export-payments", "pipeline.export_payments",
      "Write the vendor and payment CSVs for the website."),
+    ("gudid-device-fields", "pipeline.gudid_device_fields",
+     "Read packaged-sterile and MRI safety status for every GUDID device (for the part lookup). Resumable."),
     ("export-catalog", "pipeline.export_catalog",
-     "Write the part-number lookup (GUDID catalog and model numbers for every device on the site)."),
+     "Write the part-number lookup (GUDID catalog and model numbers for every orthopedic GUDID device)."),
 ]
 RECALL_STEPS = [
     ("fetch-recalls", "pipeline.fetch_recalls",

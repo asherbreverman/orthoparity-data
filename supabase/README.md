@@ -19,12 +19,13 @@ applies the reviewed ownership and naming fixes on top of it.
 | `11_add_on_functions.sql` | Medicare add-on payments (NTAP and device pass-through) for products and companies |
 | `13_approvals.sql` | FDA premarket approvals (PMA) and humanitarian device exemptions (HDE): one page per approval, with its supplement history, hooked into every existing box. Run after `07`, before `12` |
 | `14_asc_rates.sql` | Medicare ASC payment rates (CY 2027) for each procedure family's key codes. Written by `python orthoparity.py load-asc`; holds its own rows, so there's nothing to import. Run after `13`, before `12` |
-| `15_part_search.sql` | Part-number lookup from FDA GUDID: tables `pc_catalog` and `pc_catalog_brand` plus `pc_part_search(q)`. Run once, then import `pc_catalog_brand.csv` and `pc_catalog_1.csv` to `pc_catalog_4.csv`. Never deletes rows |
+| `15_part_search.sql` | Part-number lookup from FDA GUDID: tables `pc_catalog`, `pc_catalog_brand` and `pc_catalog_company` plus `pc_part_search(q)`. Run, import `pc_catalog_brand.csv`, `pc_catalog_company.csv` and `pc_catalog_1.csv` to `pc_catalog_7.csv`, then `select pc_catalog_after_import();`. Its first Phase 9 run replaces the old 4-column `pc_catalog` and empties `pc_catalog_brand`; after that it never deletes rows |
 | `16_directory.sql` | Category directories: `pc_directory_index()` and `pc_directory(code)`, every orthopedic FDA record by product code. Functions only, no tables. Run after `05` |
 | `17_team_data.sql` | Medicare TEAM model data: trigger codes, the procedure families that are TEAM episodes, CMS preliminary regional target prices (2026, 2027) and the hospital participant list. Written by `python orthoparity.py load-team`; holds its own rows, so there's nothing to import |
 | `18_team_functions.sql` | TEAM functions: `pc_team_family`, `pc_team_code`, `pc_team_hospital` and the sentence the Medicare box adds. Run after `17`, before `05` |
 | `19_trials.sql` | Registered trials from ClinicalTrials.gov: tables `pc_trial`, `pc_trial_device`, `pc_trial_vendor` and `pc_device_trials`, `pc_vendor_trials`, `pc_trial_lookup`. Import the three CSVs after the first run. Run before `05` |
 | `20_site_notes.sql` | The public corrections log (`pc_corrections`) and release notes (`pc_release_notes`). Holds its own rows; add a row and rerun |
+| `21_phase9_functions.sql` | Search grouped by brand and owner (`pc_search_groups`), sites by country for a product code (`pc_code_sites`), compare 2 to 5 companies (`pc_vendor_compare_many`) and the page-cache warm-up (`pc_cache_warm`, run by hand after an update). Functions only, no tables. Run after `05` |
 | `12_curated_fixes.sql` | Reviewed fixes on top of the imported data, each with its public source: company splits and merges, ownership changes, parents, segments, Medicare mappings. Run after every import and `07`, then rerun `05` |
 
 ## Page cache
@@ -85,6 +86,11 @@ so a cached page never outlives the data or the rules that made it. The cache st
   The new tables add about 3 MB.
 - New data after Phase 7: the run order after an import becomes 07, 13, 14, 12, 17, 18, 19, 05 (16 and 20 change
   nothing on an import; rerun 16 only if its functions change).
+- Phase 9, part numbers without a site FDA number, device facts, search groups, sites by country, ASC rates on the
+  procedures list, compare up to five companies (2026-11-24): run `15_part_search.sql` (its first run replaces the
+  old part table), import `pc_catalog_brand.csv`, `pc_catalog_company.csv` and `pc_catalog_1.csv` to
+  `pc_catalog_7.csv`, run `select pc_catalog_after_import();`, then `08_procedure_functions.sql` and
+  `21_phase9_functions.sql`, then `select pc_cache_warm();`. The part tables grow from about 83 MB to about 161 MB.
 - Changed functions: run the file that holds them. Each uses `create or replace`, so nothing is lost.
 
 ## Keys

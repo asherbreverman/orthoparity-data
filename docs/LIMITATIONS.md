@@ -65,6 +65,11 @@ the data can't support is part of the method.
   510(k) than the one shown, so some clearances show no GUDID items.
 - **The brand shown for a 510(k)** is the most common GUDID brand among its device IDs; ties go to the first
   alphabetically.
+- **Part numbers with no FDA number.** GUDID lets a company leave out the premarket submission. About 651,000
+  orthopedic device IDs list none, including many implants from large companies. The part lookup shows them with
+  "FDA number NOT FOUND in GUDID" and never infers a number from the brand or product code.
+- **Device facts are company-reported.** Units per package, packaged sterile and MRI safety come straight from GUDID.
+  "Labeling has no MRI safety information" is the company's own entry, not a safety finding.
 
 ## Recalls (openFDA)
 
