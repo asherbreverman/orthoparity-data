@@ -50,7 +50,7 @@ insert into pc_corrections (id, corrected_on, area, what_was_wrong, what_changed
    'Empirical Spine is its own company.', 'LimiFlex product pages; Enovis and Empirical Spine company pages', 'CHANGELOG, Phase 5 review'),
   ('2026-11-22-approval-dates', '2026-11-22', 'FDA approval dates',
    '7 approvals whose original record is missing from FDA''s PMA and HDE databases showed their earliest supplement date as the approval date.',
-   'Those pages read "Approval date not on file" (NOT FOUND).', '7 approval pages', 'CHANGELOG, Phase 5 review'),
+   'Those pages now read "PMA, approval date NOT FOUND".', '7 approval pages', 'CHANGELOG, Phase 5 review'),
   ('2026-11-22-approval-class', '2026-11-22', 'Device class',
    '30 PMAs in product codes FDA later reclassified read "Class III".', 'They say the code was reclassified and no longer read Class III.',
    '30 approval pages', 'CHANGELOG, Phase 5 review'),

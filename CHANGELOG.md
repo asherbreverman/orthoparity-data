@@ -1,5 +1,19 @@
 # Changelog
 
+## Phase 8 fixes from the live review (2026-11-24)
+
+From a full review of the live site after the redesign (doc "OrthoParity live site review, after Phase 8"). No new tables.
+
+- **Home counts** (`supabase/03_vendor_functions.sql`): `pc_vendor_coverage()` also returns `with_product_code`, `no_product_code`
+  and `data_end`, so the home page shows 18,267 records with a product code and the FDA data end date instead of an export
+  timestamp.
+- **Company merges** (`supabase/12_curated_fixes.sql`): Fournitures Hospitalieres Industrie rolls up to FH Industrie (same
+  Quimper address on 510(k)s K120740 and K254003; FDA registration FEI 3003898228). FX Solutions rolls up to FX Shoulder
+  Solutions (K130759 filed from the Viriat address FDA registers to Fx Shoulder Solutions SAS, FEI 3009532798). Xiamen Double
+  Engine and "Double Engline" stay separate: NOT FOUND, a public record tying the two names to one company.
+- **Wording**: the Is it new? badge reads "Predicate NOT FOUND" (`05`); the approval-date correction quotes today's wording (`20`).
+- **Design system v2.1** (`design/orthoparity.css`): eyebrows in normal case so 510(k) keeps its lowercase k.
+
 ## Phase 8: wording fixes from the persona stress test (2026-11-24)
 
 SQL-only fixes behind the site redesign; no new tables, no change in database size.

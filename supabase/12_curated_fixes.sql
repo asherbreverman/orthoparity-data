@@ -133,6 +133,24 @@ update pc_vendors set rolls_up_to = 'n_scienceforbiomaterials'
  where vendor_id in ('n_sbmsciencesforbiomaterials', 'n_sciencebiomaterials', 'n_sciencesetbiomateriauxsbm', 'n_sciencesforbiomaterials');
 select pg_temp.op_rename('n_scienceforbiomaterials', 'SBM (Science & Bio Materials)', 'bio ?materials');
 
+-- FH Industrie (Quimper, France): Fournitures Hospitalieres Industrie is its earlier name. Both file from ZI de Kernevez,
+-- 6 rue Nobel, Quimper (openFDA 510(k) K120740 as Fournitures Hospitalieres Industrie; K232226 and K254003 as FH Industrie),
+-- and FDA registration FEI 3003898228 (FH Industrie) is at the same address. Phase 8 review, Nov 24, 2026.
+update pc_vendors set rolls_up_to = 'n_fhindustrie' where vendor_id = 'n_fournitureshospitalieresindustrie';
+-- FX Shoulder Solutions: FX Solutions filed K130759 from 1663 rue de Majornas, Viriat, France, the address FDA registration
+-- FEI 3009532798 lists for Fx Shoulder Solutions SAS (owner/operator 10039598, which also holds the Addison, TX site).
+update pc_vendors set rolls_up_to = 'n_fxshoulder' where vendor_id = 'n_fxsolutions';
+-- Not merged: "Xiamen Double Engline Medical Material" (K112819) filed from a Shanghai P.O. box, while Xiamen Double Engine
+-- Medical Material (K130108) filed from 218 Houxiang Rd., Xiamen. NOT FOUND: a public record tying the two names to one company.
+delete from pc_vendor_lineage where note like 'Phase 8 review:%';
+insert into pc_vendor_lineage (vendor_id, parent, relation, valid_from, valid_to, source_url, note, reviewed) values
+ ('n_fournitureshospitalieresindustrie', 'n_fhindustrie', 'same company as', null, null,
+  'https://api.fda.gov/device/510k.json?search=applicant:(%22FH+INDUSTRIE%22+OR+%22FOURNITURES+HOSPITALIERES+INDUSTRIE%22)',
+  'Phase 8 review: same Quimper address on FDA 510(k) records and FDA registration FEI 3003898228', true),
+ ('n_fxsolutions', 'n_fxshoulder', 'same company as', null, null,
+  'https://api.fda.gov/device/registrationlisting.json?search=registration.fei_number:3009532798',
+  'Phase 8 review: FX Solutions filed from the Viriat address FDA registers to Fx Shoulder Solutions SAS', true);
+
 -- Phase 3: spelling variants of one company, each confirmed by the same street address on FDA's 510(k) records (openFDA).
 -- Each variant rolls up to the spelling with more clearances (or to that company's parent).
 -- clear this file's own lineage rows so a rerun re-inserts them once

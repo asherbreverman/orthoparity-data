@@ -503,7 +503,7 @@ begin
         'Novelty can''t be judged from the FDA record alone.',
         'Which devices did FDA clear it against, with their 510(k) numbers?',
         'predicates')
-      else pc_card('novelty', 'Is it new?', 'Predicate not on file', 'attention',
+      else pc_card('novelty', 'Is it new?', 'Predicate NOT FOUND', 'attention',
         'We could not read a predicate 510(k) number in the FDA''s summary for this clearance.',
         'Novelty can''t be judged from the FDA record alone.',
         'Which devices did FDA clear it against, with their 510(k) numbers?',

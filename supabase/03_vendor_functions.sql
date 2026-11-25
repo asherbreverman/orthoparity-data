@@ -429,15 +429,21 @@ end $$;
 -- FDA approvals, once 13_approvals.sql has created pc_approvals).
 create or replace function pc_vendor_coverage()
 returns jsonb language plpgsql stable as $$
-declare r jsonb; n_appr int := 0;
+declare r jsonb; n_appr int := 0; idx jsonb; d_end text;
 begin
   if to_regclass('public.pc_approvals') is not null then execute 'select count(*) from pc_approvals' into n_appr; end if;
+  -- Phase 8 review: one source for the home page's "with a product code" count and "data current through" date
+  if to_regprocedure('pc_directory_index()') is not null then execute 'select pc_directory_index()::jsonb' into idx; end if;
+  if to_regprocedure('pc_data_end()') is not null then execute 'select pc_data_end()::text' into d_end; end if;
   select jsonb_build_object(
     'parent_companies', count(*) filter (where coalesce(rolls_up_to, vendor_id) = vendor_id),
     'filer_companies', count(*),
     'first_year', min(first_clearance_year), 'last_year', max(last_clearance_year),
     'approvals', n_appr,
-    'devices', coalesce((select value::int from pc_meta where key = 'starting_set_clearances'), 0) + n_appr)
+    'devices', coalesce((select value::int from pc_meta where key = 'starting_set_clearances'), 0) + n_appr,
+    'with_product_code', (idx->'totals'->>'products')::int,
+    'no_product_code', (idx->'totals'->>'no_product_code')::int,
+    'data_end', d_end)
     into r
   from pc_vendors where coalesce(clearances, 0) > 0;
   return r;
